@@ -1,0 +1,27 @@
+#tracking/storeTrajectory 1
+
+/run/initialize
+
+#/process/inactivate nuclearStopping
+
+# Uncomment this line of you want visualization
+#/control/execute vis.mac
+
+/tracking/verbose 0
+/event/verbose 0
+/run/verbose 2
+
+
+### GENERATOR ###
+/particle proton
+/energy 1.2 MeV
+/position 0 0 -1 cm
+/direction 0 0 1 
+/size 0 0 cm
+
+### TARGET ###
+#/layer 1 Al 50 um 
+
+/run/printProgress 100000
+/run/beamOn 1000000
+
