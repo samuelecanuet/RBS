@@ -12,6 +12,7 @@ class RunAction;
 class Tracking;
 
 struct Data{
+  G4int TraCkID;
   G4ThreeVector Position;
   G4ThreeVector Direction;
   G4double KineticEnergy;

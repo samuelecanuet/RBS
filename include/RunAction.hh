@@ -12,11 +12,13 @@
 
 class G4Run;
 class Messenger;
+class PrimaryGeneratorAction;
+class DetectorConstruction;
 
 class RunAction : public G4UserRunAction
 {
   public:
-    RunAction(std::string name);
+    RunAction(std::string name, PrimaryGeneratorAction* gene, DetectorConstruction* detector);
     virtual ~RunAction();
 
     // virtual G4Run* GenerateRun();
@@ -29,9 +31,24 @@ class RunAction : public G4UserRunAction
     void AddNtupleRow(int index){G4AnalysisManager::Instance()->AddNtupleRow(index);}
     void FillH1(int index, double value){G4AnalysisManager::Instance()->FillH1(index, value);}
     void FillH1(int index, double value, double weight){G4AnalysisManager::Instance()->FillH1(index, value, weight);}
+    void FillH1(G4String title, double value)
+    {
+      for (int index = 0; index < G4AnalysisManager::Instance()->GetNofH1s (); index++)
+      {
+        if (title == G4AnalysisManager::Instance()->GetH1Name(index))
+        {
+          G4AnalysisManager::Instance()->FillH1(index, value);
+        }
+      }
+    }
 
+    void SetEnergy(G4double);
+    G4double value = 0;
 
     Messenger* msg;
+
+    PrimaryGeneratorAction* fGene;
+    DetectorConstruction* fDetector;
 
 
   private:

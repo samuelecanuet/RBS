@@ -31,10 +31,8 @@ G4VPhysicsConstructor* GetPhysicsConstructor(const G4String& name) {
 PhysicsList::PhysicsList() :
 	G4VModularPhysicsList() {
 
-	defaultCutValue = 1000 * nm;
+	defaultCutValue = 1. * nm;
 
-
-	//fMessenger = 0;
 	//SetVerboseLevel(1);
 
 	// EM physics
@@ -42,7 +40,7 @@ PhysicsList::PhysicsList() :
 	// RegisterPhysics(new G4EmStandardPhysics_option4(0));
 	// RegisterPhysics( new G4EmDNAPhysics());
 	// RegisterPhysics( new G4EmPenelopePhysics());
- 	RegisterPhysics( new G4EmLivermorePhysics(1));
+ 	RegisterPhysics( new G4EmLivermorePhysics(0));
 }
 
 

@@ -1,9 +1,6 @@
-#ifndef WITCH_MESSENGER_HH
-#define WITCH_MESSENGER_HH
-
-
-class RunManager; // just indicates that this class exists
-
+class RunManager;
+class RunAction;
+class DetectorConstruction;
 // Geant4 include files
 #include "G4UImessenger.hh"
 
@@ -22,6 +19,10 @@ class RunManager; // just indicates that this class exists
 #include "G4UnitsTable.hh"
 
 #include "G4ParticleTable.hh"
+#include "G4Material.hh"
+#include "G4NistManager.hh"
+
+using namespace std;
 
 
 class Messenger : public G4UImessenger
@@ -33,12 +34,21 @@ class Messenger : public G4UImessenger
   G4UIcmdWith3Vector* input_direction;
   G4UIcmdWithAString* input_size;
 
+  G4UIcmdWithAString* input_layer;
+  G4UIcmdWithADouble* input_nblayer;
+  G4UIcmdWithAString* input_detector;
+
 public:
   Messenger();
+  Messenger(RunAction*);
+  Messenger(DetectorConstruction*);
   virtual ~Messenger();
 
 
   void DefineInputCommands();
+  void DefineInputCommandsDetector();
+  void DefineInputCommandsRun();
+
   void SetNewValue(G4UIcommand *cmd, G4String args);
 
   G4ParticleDefinition* particle;
@@ -56,7 +66,15 @@ public:
   G4double particle_size[2];
   G4double* GetParticleSize();
 
+  RunAction* fRunAction;
+  DetectorConstruction* fDetector;
+
+  vector<pair<G4Material*, G4double>> layers;
+  G4int numberOfLayer;
+  G4Material* GetMaterial(G4String formula, G4double density);
+  std::map<std::string, int> parseChemicalFormula(G4String formula);
+  vector<pair<G4Material*, G4double>> GetTarget();
 
 };
 
-#endif
+

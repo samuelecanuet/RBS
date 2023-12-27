@@ -50,7 +50,12 @@ G4ParticleDefinition* PrimaryGeneratorAction::GetInitialParticle()
 
 G4ThreeVector PrimaryGeneratorAction::RandomXY(G4ThreeVector Position, G4double xy[])
 {
-  Position.x += G4RandGauss::shoot(Position.x, xy[0]);
-  Position.y += G4RandGauss::shoot(Position.y, xy[1]);
+  Position.setX(G4RandGauss::shoot(Position.x(), xy[0]));
+  Position.setY(G4RandGauss::shoot(Position.y(), xy[1]));
   return Position;
+}
+
+G4double PrimaryGeneratorAction::GetE()
+{
+  return fMessenger->GetParticleEnergy();
 }

@@ -3,6 +3,7 @@
 
 #include "ActionInitialization.hh"
 #include "PrimaryGeneratorAction.hh"
+#include "DetectorConstruction.hh"
 #include "RunAction.hh"
 #include "EventAction.hh"
 #include "SteppingAction.hh"
@@ -10,8 +11,8 @@
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-ActionInitialization::ActionInitialization(std::string filename)
- : G4VUserActionInitialization()
+ActionInitialization::ActionInitialization(std::string filename, DetectorConstruction* detector)
+ : G4VUserActionInitialization(), fDetector(detector)
 {
   name = filename;  
 }
@@ -25,7 +26,9 @@ ActionInitialization::~ActionInitialization()
 
 void ActionInitialization::BuildForMaster() const
 {
-  RunAction* runAction = new RunAction(name);
+    PrimaryGeneratorAction* generatorAction;
+
+  RunAction* runAction = new RunAction(name, generatorAction, fDetector);
   SetUserAction(runAction);
 }
 
@@ -33,11 +36,12 @@ void ActionInitialization::BuildForMaster() const
 
 void ActionInitialization::Build() const
 {
+  
 
   PrimaryGeneratorAction* generatorAction = new PrimaryGeneratorAction();
   SetUserAction(generatorAction);
 
-  RunAction* runAction = new RunAction(name);
+  RunAction* runAction = new RunAction(name, generatorAction, fDetector);
   SetUserAction(runAction);
 
   Tracking* tracking = new Tracking();

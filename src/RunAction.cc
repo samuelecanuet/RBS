@@ -2,8 +2,6 @@
 /// \brief Implementation of the RunAction class
 
 #include "RunAction.hh"
-#include "PrimaryGeneratorAction.hh"
-#include "DetectorConstruction.hh"
 
 #include "G4RunManager.hh"
 #include "G4Run.hh"
@@ -15,15 +13,18 @@
 
 #include "G4AnalysisManager.hh"
 #include "G4RootNtupleFileManager.hh"
+#include "Messenger.hh"
+
+#include "PrimaryGeneratorAction.hh"
+#include "DetectorConstruction.hh"
+
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-RunAction::RunAction(std::string name)
-    : G4UserRunAction()
+RunAction::RunAction(std::string name, PrimaryGeneratorAction* gene, DetectorConstruction* detector)
+    : G4UserRunAction(), fGene(gene), fDetector(detector)
 {
-  filename = name;
-
-  msg = new Messenegr();
+  filename = name; 
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -36,6 +37,12 @@ RunAction::~RunAction()
 
 void RunAction::BeginOfRunAction(const G4Run *)
 {
+  
+  G4double MaxEnergy = fGene->GetE()/keV;
+  std::vector<G4Material*> vec = fDetector->GetMaterials();
+
+  
+
   auto analysisManager = G4AnalysisManager::Instance();
   analysisManager->SetVerboseLevel(0);
 
@@ -51,15 +58,18 @@ void RunAction::BeginOfRunAction(const G4Run *)
   analysisManager->CreateNtupleDColumn("z_vertex");
   
   analysisManager->FinishNtuple();
-  analysisManager->CreateH1("RBS_detected", "RBS_detected", 1200, 0, 1200);
-  analysisManager->CreateH1("RBS_step_corr", "RBS_step_corr", 1200, 0, 1200);
-  analysisManager->CreateH1("RBS", "RBS", 1200, 0, 1200);
-  analysisManager->CreateH1("RBS2", "RBS2", 1200, 0, 1200);
-  analysisManager->CreateH1("RBS3", "RBS3", 1200, 0, 1200);
-  analysisManager->CreateH1("z", "z", 1200, 0, 1200);
+  analysisManager->CreateH1("RBS_detected", "RBS_detected", MaxEnergy, 0, MaxEnergy);
+  analysisManager->CreateH1("RBS_step_corr", "RBS_step_corr", MaxEnergy, 0, MaxEnergy);
+  analysisManager->CreateH1("RBS", "RBS", MaxEnergy, 0, MaxEnergy);
+  analysisManager->CreateH1("RBS2", "RBS2", MaxEnergy, 0, MaxEnergy);
+  analysisManager->CreateH1("RBS3", "RBS3", MaxEnergy, 0, MaxEnergy);
+  analysisManager->CreateH1("z", "z", MaxEnergy, 0, MaxEnergy);
 
-  G4cout<<msg->GetParticleEnergy()<<G4endl;
-
+  for (int i=0; i<vec.size(); i++)
+  {
+    analysisManager->CreateH1(vec[i]->GetName(), vec[i]->GetName(), MaxEnergy, 0, MaxEnergy);
+  }
+  
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

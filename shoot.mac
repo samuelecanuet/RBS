@@ -2,14 +2,9 @@
 
 /run/initialize
 
-#/process/inactivate nuclearStopping
-
-# Uncomment this line of you want visualization
-#/control/execute vis.mac
-
 /tracking/verbose 0
 /event/verbose 0
-/run/verbose 2
+/run/verbose 0
 
 
 ### GENERATOR ###
@@ -17,11 +12,20 @@
 /energy 1.2 MeV
 /position 0 0 -1 cm
 /direction 0 0 1 
-/size 0 0 cm
+/size 5 5 um
 
 ### TARGET ###
-#/layer 1 Al 50 um 
+/numberOfLayer 3
+/layer 1 G4_Al      50  nm
+/layer 2 G4_MYLAR   500 nm
+/layer 3 G4_Al      50  nm
+
+### DETECTOR ###
+           name   material   thickness   area     angle    distance    resolution
+/detector  RBS    G4_Si      100 um      25 mm    -135     23 mm       6.2 keV
+/detector  STIM   G4_Si      100 um      25 mm    0        5 mm        6.2 keV
+
 
 /run/printProgress 100000
-/run/beamOn 1000000
+/run/beamOn 500000
 

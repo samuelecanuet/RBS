@@ -24,9 +24,12 @@ public:
   virtual void GeneratePrimaries(G4Event *);
 
   G4ParticleDefinition* GetInitialParticle();
-  G4double InitialEnergy = 1.2;
 
   G4ThreeVector RandomXY(G4ThreeVector Position, G4double xy[]);
+
+
+  G4double GetE();
+
 
 
   Messenger* fMessenger;

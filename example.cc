@@ -47,9 +47,11 @@ int main(int argc, char **argv)
   G4RunManager *runManager = new G4RunManager;
   // runManager->SetNumberOfThreads(10);
 
-  runManager->SetUserInitialization(new DetectorConstruction());
+  DetectorConstruction* detector = new DetectorConstruction();
+  runManager->SetUserInitialization(detector);
   runManager->SetUserInitialization(new PhysicsList());    
-  runManager->SetUserInitialization(new ActionInitialization(filename));
+  runManager->SetUserInitialization(new ActionInitialization(filename, detector));
+
 
   G4VisManager* visManager = new G4VisExecutive("Quiet");
   visManager->Initialize();
