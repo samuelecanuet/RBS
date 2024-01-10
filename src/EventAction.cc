@@ -18,14 +18,15 @@
 #include <vector>
 #include <numeric>
 #include "TH1D.h"
+
+
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 EventAction::EventAction(RunAction *runAction, Tracking *tracking)
     : G4UserEventAction(),
       fRunAction(runAction), fTracking(tracking)
-{
+{   
 }
-
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 EventAction::~EventAction()
@@ -34,21 +35,20 @@ EventAction::~EventAction()
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-void EventAction::BeginOfEventAction(const G4Event *)
+void EventAction::BeginOfEventAction(const G4Event *event)
 {
     StepVector.clear();
-    Edges.Energy.clear();
-    Edges.Material.clear();
+
+    InitialParticle = event->GetPrimaryVertex()->GetPrimary()->GetParticleDefinition();
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 void EventAction::EndOfEventAction(const G4Event *event)
 {
-   
 }
 
-void EventAction::AddParticle(G4ThreeVector position, G4ThreeVector direction, G4double energy, G4double time, G4Material* mat)
+void EventAction::AddParticle(G4ThreeVector position, G4ThreeVector direction, G4double energy, G4double time, G4Material *mat)
 {
     Data info;
     info.Position = position;
@@ -63,4 +63,9 @@ void EventAction::AddParticle(G4ThreeVector position, G4ThreeVector direction, G
 std::vector<Data> EventAction::GetParticleVector()
 {
     return StepVector;
+}
+
+const G4ParticleDefinition *EventAction::GetInitialParticle()
+{
+    return InitialParticle;
 }

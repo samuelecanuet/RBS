@@ -17,7 +17,10 @@ public:
 
   PhysicsList();
   virtual ~PhysicsList();
-  void AddPhysicsList(const G4String& name);
+  //void AddPhysicsList(const G4String& name);
+  void ConstructProcess() ;
+  void ConstructParticle();
+
 
 private:
 

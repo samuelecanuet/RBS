@@ -120,16 +120,24 @@
 /direction 0 0 1 
 /size 5 5 um
 
+### DETECTOR ###
+#           name   material   thickness   area     angle    distance    resolution
+/detector  RBS    G4_Si      100 um      25 mm    -135     23 mm       6.7 keV
+/detector  STIM   G4_Si      100 um      25 mm    0        5 mm        6.7 keV
+
+
 ### TARGET ###
 /numberOfLayer 3
 /layer 1 G4_Al 50 nm
 /layer 2 G4_MYLAR 500 nm
 /layer 3 G4_Al 50 nm
 
-### DETECTOR ###
-#           name   material   thickness   area     angle    distance    resolution
-/detector  RBS    G4_Si      100 um      25 mm    -135     23 mm       6.2 keV
-/detector  STIM   G4_Si      100 um      25 mm    0        5 mm        6.2 keV
+### TARGET ###
+#/numberOfLayer 2
+#/layer 1 G4_Au 10000 nm
+#/layer 2 G4_Si 500000 nm
+
 
 /run/printProgress 100
-/run/beamOn 1
+/vis/scene/endOfEventAction accumulate -1
+/run/beamOn 100

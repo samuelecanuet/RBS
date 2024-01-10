@@ -42,12 +42,15 @@ public:
   Messenger();
   Messenger(RunAction*);
   Messenger(DetectorConstruction*);
+  Messenger(G4int );
   virtual ~Messenger();
 
 
   void DefineInputCommands();
   void DefineInputCommandsDetector();
   void DefineInputCommandsRun();
+  void DefineInputCommandsProcess();
+
 
   void SetNewValue(G4UIcommand *cmd, G4String args);
 
@@ -74,6 +77,8 @@ public:
   G4Material* GetMaterial(G4String formula, G4double density);
   std::map<std::string, int> parseChemicalFormula(G4String formula);
   vector<pair<G4Material*, G4double>> GetTarget();
+
+  G4int number = 0;
 
 };
 

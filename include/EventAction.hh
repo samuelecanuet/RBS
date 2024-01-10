@@ -11,47 +11,36 @@
 class RunAction;
 class Tracking;
 
-struct Data{
-  G4int TraCkID;
+struct Data
+{
+  G4int TrackID;
   G4ThreeVector Position;
   G4ThreeVector Direction;
   G4double KineticEnergy;
   G4double Time;
-  G4Material* Material;
+  G4Material *Material;
 };
-
-struct Edges_struct{
-  std::vector<double> Energy;
-  std::vector<G4Material*> Material;
-};
-
-/// Event action class
-///
 
 class EventAction : public G4UserEventAction
 {
-  public:
-    EventAction(RunAction* runAction, Tracking* tracking);
-    virtual ~EventAction();
+public:
+  EventAction(RunAction *runAction, Tracking *tracking);
+  virtual ~EventAction();
 
-    virtual void BeginOfEventAction(const G4Event* event);
-    virtual void EndOfEventAction(const G4Event* event);
+  virtual void BeginOfEventAction(const G4Event *event);
+  virtual void EndOfEventAction(const G4Event *event);
+  std::vector<Data> StepVector;
 
-    std::vector<Data> StepVector;
+  void AddParticle(G4ThreeVector position, G4ThreeVector direction, G4double energy, G4double time, G4Material *mat);
+  std::vector<Data> GetParticleVector();
+  const G4ParticleDefinition *InitialParticle;
+  const G4ParticleDefinition *GetInitialParticle();
 
-    void AddParticle(G4ThreeVector position, G4ThreeVector direction, G4double energy, G4double time, G4Material* mat);
-    std::vector<Data> GetParticleVector();
-
-  private:
-
-    RunAction* fRunAction;
-    Tracking* fTracking;
-    Edges_struct Edges;
-        
+private:
+  RunAction *fRunAction;
+  Tracking *fTracking;
 };
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 #endif
-
-    

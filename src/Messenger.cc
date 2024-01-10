@@ -10,6 +10,11 @@ Messenger::Messenger()
   DefineInputCommands();
 }
 
+Messenger::Messenger(G4int)
+{
+  DefineInputCommandsProcess();
+}
+
 Messenger::Messenger(RunAction *runAction) : fRunAction(runAction)
 {
   DefineInputCommandsRun();
@@ -23,6 +28,14 @@ Messenger::Messenger(DetectorConstruction *detectorConstruction) : fDetector(det
 // destructor: delete all allocated command objects
 Messenger::~Messenger()
 {
+  delete input_particle;
+  delete input_energy;
+  delete input_position;
+  delete input_direction;
+  delete input_size;
+  delete input_layer;
+  delete input_nblayer;
+  delete input_detector;
 }
 
 //----------------------------------------------------------------------
@@ -56,15 +69,22 @@ void Messenger::DefineInputCommandsDetector()
   // layer
   input_layer = new G4UIcmdWithAString("/layer", this);
 
-   // detector
+  // detector
   input_detector = new G4UIcmdWithAString("/detector", this);
 }
 
 void Messenger::DefineInputCommandsRun()
 {
-   // particle energy
+  // particle energy
   input_energy = new G4UIcmdWithADoubleAndUnit("/energy", this);
 }
+
+void Messenger::DefineInputCommandsProcess()
+{
+  // layer
+  input_layer = new G4UIcmdWithAString("/layer", this);
+}
+
 
 //----------------------------------------------------------------------
 // function processing the commands
@@ -103,7 +123,7 @@ void Messenger::SetNewValue(G4UIcommand *cmd, G4String args)
     particle_size[1] = valuey * G4UnitDefinition::GetValueOf(unit);
   }
 
-   if (cmd == input_layer)
+  if (cmd == input_layer)
   {
     G4int number;
     G4double thickness;
@@ -133,9 +153,9 @@ void Messenger::SetNewValue(G4UIcommand *cmd, G4String args)
     std::istringstream iss(args);
     iss >> name >> material >> thickness >> thickness_unit >> area >> area_unit >> angle >> distance >> distance_unit >> resolution >> resolution_unit;
 
-    fDetector->SetDetector(name, G4NistManager::Instance()->FindOrBuildMaterial(material), thickness * G4UnitDefinition::GetValueOf(thickness_unit), area * G4UnitDefinition::GetValueOf(area_unit), angle, distance * G4UnitDefinition::GetValueOf(distance_unit), resolution * G4UnitDefinition::GetValueOf(resolution_unit));
+    fDetector->SetDetector(name, number, G4NistManager::Instance()->FindOrBuildMaterial(material), thickness * G4UnitDefinition::GetValueOf(thickness_unit), area * G4UnitDefinition::GetValueOf(area_unit), angle, distance * G4UnitDefinition::GetValueOf(distance_unit), resolution * G4UnitDefinition::GetValueOf(resolution_unit));
+    number++;
   }
-
 }
 
 G4ParticleDefinition *Messenger::GetParticle() { return particle; }
@@ -143,4 +163,4 @@ G4double Messenger::GetParticleEnergy() { return energy; }
 G4ThreeVector Messenger::GetParticlePosition() { return particle_position; }
 G4ThreeVector Messenger::GetParticleDirection() { return particle_direction; }
 G4double *Messenger::GetParticleSize() { return particle_size; }
-vector<pair<G4Material*, G4double>> Messenger::GetTarget(){return layers;}
+vector<pair<G4Material *, G4double>> Messenger::GetTarget() { return layers; }

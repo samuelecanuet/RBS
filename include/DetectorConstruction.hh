@@ -9,8 +9,12 @@
 #include "G4VisAttributes.hh"
 #include "G4Material.hh"
 
+#include "G4UserLimits.hh"
+
 class G4VPhysicalVolume;
 class Messenger;
+class Detector;
+class Layer;
 
 
 using namespace std;
@@ -34,10 +38,25 @@ public:
   std::vector<std::pair<G4Material *, G4double>> vec;
 
   void SetTarget(vector<pair<G4Material *, G4double>>);
-  void SetDetector(G4String Name, G4Material *Material, G4double Thickness, G4double Area, G4double Angle, G4double Distance, G4double Resolution);
+  void SetDetector(G4String Name, G4int Number, G4Material *Material, G4double Thickness, G4double Area, G4double Angle, G4double Distance, G4double Resolution);
 
   std::vector<G4Material *> GetMaterials();
   std::vector<G4Material *> vecs;
+
+  std::vector<Detector*> GetDetectors();
+  std::vector<Detector* > Detectors;
+
+  std::vector<Layer*> GetLayers();
+  std::vector<Layer* > Layers;
+  std::vector<G4LogicalVolume *>Logic_Layers;
+
+  G4double GetTotalThickness();
+
+
+G4double fArea, fAngle, fDistance, Total_Thickness;
+G4UserLimits* fStepLimit = nullptr;
+
+
 
 };
 

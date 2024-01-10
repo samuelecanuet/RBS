@@ -3,7 +3,6 @@
 
 #include "DetectorConstruction.hh"
 
-
 #include "G4RunManager.hh"
 #include "G4NistManager.hh"
 #include "G4Box.hh"
@@ -17,11 +16,14 @@
 #include "G4SystemOfUnits.hh"
 #include "G4SubtractionSolid.hh"
 #include "G4VPhysicalVolume.hh"
+#include "G4LogicalVolumeStore.hh"
 
 #include <cmath>
 
 #include "Messenger.hh"
 #include "Detector.hh"
+#include "Layer.hh"
+
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -51,8 +53,8 @@ G4VPhysicalVolume *DetectorConstruction::Construct()
   // World-----------------------------------------------------------------------
   // world parameters
 
-  G4double world_sizeXY = 5 * cm;
-  G4double world_sizeZ = 5 * cm;
+  G4double world_sizeXY = 7 * cm;
+  G4double world_sizeZ = 7 * cm;
   G4Material *world_mat = nist->FindOrBuildMaterial("G4_Galactic");
 
   G4Box *solidWorld =
@@ -97,6 +99,7 @@ G4VPhysicalVolume *DetectorConstruction::Construct()
   //                                               false,                                                                   // no boolean op.
   //                                               0);
 
+
   return physWorld;
 }
 
@@ -118,19 +121,29 @@ void DetectorConstruction::SetTarget(vector<pair<G4Material *, G4double>> Target
     oss << "Layer" << Layer_index << "_" << layer.first->GetName();
     G4String name = oss.str();
 
-    G4Tubs *Layer = new G4Tubs(name, 0., SuppCatcher_Catcher_radius_inner, layer.second / 2, 0., 360. * deg);
-    G4LogicalVolume *Logic_Layer = new G4LogicalVolume(Layer, layer.first, name);
+    G4Tubs *Layer_tubs = new G4Tubs(name, 0., SuppCatcher_Catcher_radius_inner, layer.second / 2, 0., 360. * deg);
+    G4LogicalVolume *Logic_Layer = new G4LogicalVolume(Layer_tubs, layer.first, name);
     Physic_Layer = new G4PVPlacement(0, G4ThreeVector(0., 0., Position + layer.second / 2), Logic_Layer, name, logicWorld, false, Layer_index);
     Position += layer.second;
+
+    Logic_Layers.push_back(Logic_Layer);
+    Layers.push_back(new Layer(Layer_index - 1, layer.first, fArea, fAngle, fDistance));
+    Logic_Layer->SetSensitiveDetector(Layers[Layers.size() - 1]);
+
+    Total_Thickness += layer.second;
   }
 
-  std::set<G4Material*> uniqueMaterials(materialVector.begin(), materialVector.end());
-  std::vector<G4Material*> uniqueMaterialVector(uniqueMaterials.begin(), uniqueMaterials.end());
+  std::set<G4Material *> uniqueMaterials(materialVector.begin(), materialVector.end());
+  std::vector<G4Material *> uniqueMaterialVector(uniqueMaterials.begin(), uniqueMaterials.end());
   vecs = uniqueMaterialVector;
+
+  
+
+
   G4RunManager::GetRunManager()->GeometryHasBeenModified();
 }
 
-void DetectorConstruction::SetDetector(G4String Name, G4Material* Material, G4double Thickness, G4double Area, G4double Angle, G4double Distance, G4double Resolution)
+void DetectorConstruction::SetDetector(G4String Name, G4int Number, G4Material *Material, G4double Thickness, G4double Area, G4double Angle, G4double Distance, G4double Resolution)
 {
   G4ThreeVector Position = G4ThreeVector(0., Distance * sin(Angle * deg), Distance * cos(Angle * deg));
 
@@ -139,16 +152,43 @@ void DetectorConstruction::SetDetector(G4String Name, G4Material* Material, G4do
   Rotation->rotateY(0. * deg);
   Rotation->rotateZ(0. * deg);
 
-  G4Tubs *Detector = new G4Tubs(Name, 0., sqrt(Area/M_PI), Thickness / 2, 0., 360. * deg);
-  G4LogicalVolume *Logic_Detector = new G4LogicalVolume(Detector, Material, Name);
+  G4Tubs *Detector_tubs = new G4Tubs(Name, 0., sqrt(Area / M_PI), Thickness / 2, 0., 360. * deg);
+  G4LogicalVolume *Logic_Detector = new G4LogicalVolume(Detector_tubs, Material, Name);
   Physics_Detector = new G4PVPlacement(Rotation, Position, Logic_Detector, Name, logicWorld, false, 0);
 
-  Detector* det = new Detector(Name);
+  Distance = Distance - Thickness/2 - 50/2*nm;
+  G4Tubs *Detector_tubs1 = new G4Tubs("1", 0., sqrt(Area / M_PI), 50*nm/2, 0., 360. * deg);
+  G4LogicalVolume *Logic_Detector1 = new G4LogicalVolume(Detector_tubs1, Material, "1");
+  G4VPhysicalVolume* Physics_Detector1 = new G4PVPlacement(Rotation, G4ThreeVector(0., Distance * sin(Angle * deg), Distance * cos(Angle * deg)), Logic_Detector1, "1", logicWorld, false, 0);
 
+  Detectors.push_back(new Detector(Name, Number, Resolution));
+  Logic_Detector->SetSensitiveDetector(Detectors[Detectors.size() - 1]);
   G4RunManager::GetRunManager()->GeometryHasBeenModified();
+
+  if (Name == "RBS")
+  {
+    fArea = Area;
+    fDistance = Distance;
+    fAngle = Angle;
+  }
 }
 
-std::vector<G4Material*> DetectorConstruction::GetMaterials()
+std::vector<G4Material *> DetectorConstruction::GetMaterials()
 {
   return vecs;
+}
+
+std::vector<Detector *> DetectorConstruction::GetDetectors()
+{
+  return Detectors;
+}
+
+std::vector<Layer *> DetectorConstruction::GetLayers()
+{
+  return Layers;
+}
+
+G4double DetectorConstruction::GetTotalThickness()
+{
+  return Total_Thickness;
 }
