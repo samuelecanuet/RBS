@@ -46,7 +46,8 @@ int main(int argc, char **argv)
   }
 
   G4RunManager *runManager = new G4RunManager;
-  // runManager->SetNumberOfThreads(10);
+  // G4MTRunManager *runManager = new G4MTRunManager;
+  // runManager->SetNumberOfThreads(6);
 
   DetectorConstruction* detector = new DetectorConstruction();
   runManager->SetUserInitialization(detector);

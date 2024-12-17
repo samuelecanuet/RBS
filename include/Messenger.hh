@@ -1,6 +1,7 @@
 class RunManager;
 class RunAction;
 class DetectorConstruction;
+class PhysicsList;
 // Geant4 include files
 #include "G4UImessenger.hh"
 
@@ -30,6 +31,7 @@ class Messenger : public G4UImessenger
     
   G4UIcmdWithAString *input_particle;
   G4UIcmdWithADoubleAndUnit *input_energy;
+  G4UIcmdWithADoubleAndUnit *input_position_z;
   G4UIcmdWith3VectorAndUnit* input_position;
   G4UIcmdWith3Vector* input_direction;
   G4UIcmdWithAString* input_size;
@@ -50,6 +52,8 @@ public:
   void DefineInputCommandsDetector();
   void DefineInputCommandsRun();
   void DefineInputCommandsProcess();
+
+  double position_z = -99;
 
 
   void SetNewValue(G4UIcommand *cmd, G4String args);

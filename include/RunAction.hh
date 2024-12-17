@@ -23,6 +23,9 @@ class RunAction : public G4UserRunAction
     virtual void BeginOfRunAction(const G4Run*);
     virtual void   EndOfRunAction(const G4Run*);
 
+    std::map<int, int>MAPHIST;
+    int counter=0;
+
     void FillNtupleDColumn(int index_Ntuple, int index, double value){G4AnalysisManager::Instance()->FillNtupleDColumn(index_Ntuple, index, value);}
     void AddNtupleRow(int index){G4AnalysisManager::Instance()->AddNtupleRow(index);}
 
@@ -47,6 +50,18 @@ class RunAction : public G4UserRunAction
         {
           G4AnalysisManager::Instance()->FillH1(index, value, weight);
         }
+      }
+    }
+    
+    void FillH1Map(int index, double value)
+    {
+      if (MAPHIST.find(index) != MAPHIST.end())
+      {
+        G4AnalysisManager::Instance()->FillH1(MAPHIST[index], value);
+      }
+      else
+      {
+        G4cout << "Histogram not found" << G4endl;
       }
     }
 

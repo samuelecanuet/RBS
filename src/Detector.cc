@@ -39,14 +39,20 @@ G4bool Detector::ProcessHits(G4Step *step, G4TouchableHistory *)
     G4double Ekin = step->GetPreStepPoint()->GetKineticEnergy() / keV;
     Ekin_res = Ekin + G4RandGauss::shoot(0, fResolution/keV);
 
+    int num_of_hist  = 3 + 3;
+
     fRunAction->FillNtupleDColumn(1, fNumber*3, Ekin);
     fRunAction->FillNtupleDColumn(1, fNumber*3+1, Ekin_res);
     fRunAction->FillNtupleDColumn(1, fNumber*3+2, step->GetTrack()->GetWeight());
     fRunAction->AddNtupleRow(1);
 
-    fRunAction->FillH1(3*fNumber, Ekin_res);
-    fRunAction->FillH1(3*fNumber+1, Ekin_res,  step->GetTrack()->GetWeight());
-    fRunAction->FillH1(3*fNumber+2, Ekin_res,  1/step->GetTrack()->GetWeight());
+    fRunAction->FillH1(fName + "_Ekin", Ekin);
+    // fRunAction->FillH1Map(100*fNumber+1, Ekin_res,  step->GetTrack()->GetWeight());
+    // fRunAction->FillH1Map(100*fNumber+2, Ekin_res,  1/step->GetTrack()->GetWeight());
+
+    int layernb = step->GetTrack()->GetWeight() / 1000;
+    int Z = step->GetTrack()->GetWeight() - layernb * 1000;
+    fRunAction->FillH1(fName + "_" + to_string(layernb-1) + "_" + to_string(Z), Ekin);
 
     step->GetTrack()->SetTrackStatus(fStopAndKill);
   }

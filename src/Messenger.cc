@@ -1,6 +1,7 @@
 #include "Messenger.hh"
 #include "RunAction.hh"
 #include "DetectorConstruction.hh"
+#include "PhysicsList.hh"
 
 //----------------------------------------------------------------------
 // constructor of the messenger: define the commands
@@ -24,7 +25,6 @@ Messenger::Messenger(DetectorConstruction *detectorConstruction) : fDetector(det
 {
   DefineInputCommandsDetector();
 }
-
 // destructor: delete all allocated command objects
 Messenger::~Messenger()
 {
@@ -71,6 +71,9 @@ void Messenger::DefineInputCommandsDetector()
 
   // detector
   input_detector = new G4UIcmdWithAString("/detector", this);
+
+  //layer position
+  input_position_z = new G4UIcmdWithADoubleAndUnit("/position_z", this);
 }
 
 void Messenger::DefineInputCommandsRun()
@@ -123,6 +126,11 @@ void Messenger::SetNewValue(G4UIcommand *cmd, G4String args)
     particle_size[1] = valuey * G4UnitDefinition::GetValueOf(unit);
   }
 
+  if (cmd == input_position_z)
+  {
+    position_z = input_position_z->GetNewDoubleValue(args);
+  }
+
   if (cmd == input_layer)
   {
     G4int number;
@@ -136,7 +144,12 @@ void Messenger::SetNewValue(G4UIcommand *cmd, G4String args)
 
     if (layers.size() == numberOfLayer)
     {
-      fDetector->SetTarget(layers);
+      if (position_z == -99)
+      {
+        G4cout << "Position z not set" << G4endl;
+        exit(0);
+      }
+      fDetector->SetTarget(layers, position_z);
     }
   }
 
@@ -144,6 +157,8 @@ void Messenger::SetNewValue(G4UIcommand *cmd, G4String args)
   {
     numberOfLayer = input_nblayer->GetNewDoubleValue(args);
   }
+
+  
 
   if (cmd == input_detector)
   {

@@ -105,13 +105,12 @@ G4VPhysicalVolume *DetectorConstruction::Construct()
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-void DetectorConstruction::SetTarget(vector<pair<G4Material *, G4double>> Target)
+void DetectorConstruction::SetTarget(vector<pair<G4Material *, G4double>> Target, double Position)
 {
 
-  vector<G4Material *> materialVector;
+  
 
   G4int Layer_index = 0;
-  G4double Position = 0;
   for (const pair<G4Material *, G4double> &layer : Target)
   {
     materialVector.push_back(layer.first);
@@ -145,7 +144,7 @@ void DetectorConstruction::SetTarget(vector<pair<G4Material *, G4double>> Target
 
 void DetectorConstruction::SetDetector(G4String Name, G4int Number, G4Material *Material, G4double Thickness, G4double Area, G4double Angle, G4double Distance, G4double Resolution)
 {
-  G4ThreeVector Position = G4ThreeVector(0., Distance * sin(Angle * deg), Distance * cos(Angle * deg));
+  G4ThreeVector Position = G4ThreeVector(0., (Distance - Thickness/2) * sin(Angle * deg), (Distance - Thickness/2) * cos(Angle * deg));
 
   G4RotationMatrix *Rotation = new G4RotationMatrix();
   Rotation->rotateX(Angle * deg);
@@ -156,7 +155,7 @@ void DetectorConstruction::SetDetector(G4String Name, G4int Number, G4Material *
   G4LogicalVolume *Logic_Detector = new G4LogicalVolume(Detector_tubs, Material, Name);
   Physics_Detector = new G4PVPlacement(Rotation, Position, Logic_Detector, Name, logicWorld, false, 0);
 
-  Distance = Distance - Thickness/2 - 50/2*nm;
+  Distance = Distance - 50/2*nm;
   G4Tubs *Detector_tubs1 = new G4Tubs("1", 0., sqrt(Area / M_PI), 50*nm/2, 0., 360. * deg);
   G4LogicalVolume *Logic_Detector1 = new G4LogicalVolume(Detector_tubs1, Material, "1");
   G4VPhysicalVolume* Physics_Detector1 = new G4PVPlacement(Rotation, G4ThreeVector(0., Distance * sin(Angle * deg), Distance * cos(Angle * deg)), Logic_Detector1, "1", logicWorld, false, 0);
@@ -171,6 +170,20 @@ void DetectorConstruction::SetDetector(G4String Name, G4int Number, G4Material *
     fDistance = Distance;
     fAngle = Angle;
   }
+
+  // DEADLAYER  
+  // G4double DeadLayer_thickness = 50 * nm;
+  // G4Tubs *DeadLayer = new G4Tubs(Name + "_DeadLayer", 0., sqrt(Area / M_PI), DeadLayer_thickness / 2, 0., 360. * deg);
+  // G4LogicalVolume *Logic_DeadLayer = new G4LogicalVolume(DeadLayer, Material, Name + "_DeadLayer");
+  // G4ThreeVector Position_dl = G4ThreeVector(0., (Distance-Thickness/2-DeadLayer_thickness/2) * sin(Angle * deg), (Distance-Thickness/2-DeadLayer_thickness/2) * cos(Angle * deg));
+  // G4VPhysicalVolume *Physics_DeadLayer = new G4PVPlacement(Rotation, Position_dl, Logic_DeadLayer, Name + "_DeadLayer", logicWorld, true, 0);
+
+  // // red deadlayer in vis
+  // G4VisAttributes *DeadLayerVisAtt = new G4VisAttributes(G4Colour(1.0, 0.0, 0.0));
+  // Logic_DeadLayer->SetVisAttributes(DeadLayerVisAtt);
+
+
+
 }
 
 std::vector<G4Material *> DetectorConstruction::GetMaterials()
@@ -191,4 +204,9 @@ std::vector<Layer *> DetectorConstruction::GetLayers()
 G4double DetectorConstruction::GetTotalThickness()
 {
   return Total_Thickness;
+}
+
+std::vector<G4Material *> DetectorConstruction::GetTargetMaterial()
+{
+  return materialVector;
 }

@@ -6,11 +6,10 @@
 #include "G4Event.hh"
 
 using namespace CLHEP;
-class Messenger;
 
 class Stepper : public G4VDiscreteProcess {
 public:
-    Stepper(const G4String& processName);
+    Stepper(const G4String& processName, double);
     virtual ~Stepper();
 
     G4double GetMeanFreePath(const G4Track& aTrack, G4double previousStepSize, G4ForceCondition* condition);
@@ -22,7 +21,6 @@ public:
     // G4double AtRestGetPhysicalInteractionLength(const G4Track&, G4ForceCondition*);
 
     RunAction* fRunAction;
-    Messenger* msg;
 
      G4double CollisionEnergy(G4double Energy, const G4Element *Element, G4double Angle);
   G4ThreeVector DirectionRBS();

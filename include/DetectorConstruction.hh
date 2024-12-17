@@ -34,14 +34,19 @@ public:
   G4LogicalVolume *logicWorld;
   G4double SuppCatcher_Catcher_radius_inner;
 
+  vector<G4Material *> materialVector;
+  G4UserLimits *myStepLimit ;
+
   Messenger *msgg;
   std::vector<std::pair<G4Material *, G4double>> vec;
 
-  void SetTarget(vector<pair<G4Material *, G4double>>);
+  void SetTarget(vector<pair<G4Material *, G4double>>, double);
   void SetDetector(G4String Name, G4int Number, G4Material *Material, G4double Thickness, G4double Area, G4double Angle, G4double Distance, G4double Resolution);
 
   std::vector<G4Material *> GetMaterials();
   std::vector<G4Material *> vecs;
+
+  std::vector<G4Material *> GetTargetMaterial();
 
   std::vector<Detector*> GetDetectors();
   std::vector<Detector* > Detectors;

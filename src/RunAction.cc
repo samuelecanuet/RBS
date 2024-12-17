@@ -39,6 +39,7 @@ void RunAction::BeginOfRunAction(const G4Run *)
 {
   G4double MaxEnergy = fGene->GetE() / keV;
   std::vector<G4Material *> Materials = fDetector->GetMaterials();
+  std::vector<G4Material *> LayerMaterial = fDetector->GetTargetMaterial();
   std::vector<Detector *> Detectors = fDetector->GetDetectors();
   std::vector<Layer *> Layers = fDetector->GetLayers();
   MaxThickness = fDetector->GetTotalThickness()/nm;
@@ -58,26 +59,41 @@ void RunAction::BeginOfRunAction(const G4Run *)
   analysisManager->CreateNtupleDColumn("z_vertex");
   analysisManager->FinishNtuple(0);
 
-
+  
   // DETECTORS
   analysisManager->CreateNtuple("Detectors", "Detectors Hits");
   for (int i = 0; i < Detectors.size(); i++)
   {
-    G4String Name = Detectors[i]->GetName();
-    analysisManager->CreateNtupleDColumn(Name+"_Ekin");
-    analysisManager->CreateNtupleDColumn(Name+"_Ekin_res");
-    analysisManager->CreateNtupleDColumn(Name+"_weight");
+    G4String Name_det = Detectors[i]->GetName();
+    analysisManager->CreateNtupleDColumn(Name_det+"_Ekin");
+    analysisManager->CreateNtupleDColumn(Name_det+"_Ekin_res");
+    analysisManager->CreateNtupleDColumn(Name_det+"_weight");
 
-    analysisManager->CreateH1(Name+"_Ekin_res", Name+"_Ekin_res", MaxEnergy, 0, MaxEnergy);
-    analysisManager->CreateH1(Name+"_Ekin_weight", Name+"_Ekin_weight", MaxEnergy, 0, MaxEnergy);
-    analysisManager->CreateH1(Name+"_Ekin_1weight", Name+"_Ekin_1weight", MaxEnergy, 0, MaxEnergy);
+    analysisManager->CreateH1(Name_det+"_Ekin", Name_det+"_Ekin", MaxEnergy, 0, MaxEnergy);
+    analysisManager->CreateH1(Name_det+"_Ekin_weight", Name_det+"_Ekin_weight", MaxEnergy, 0, MaxEnergy);
+    analysisManager->CreateH1(Name_det+"_Ekin_1weight", Name_det+"_Ekin_1weight", MaxEnergy, 0, MaxEnergy);
+
+
+    for (int j = 0; j < Layers.size(); j++)
+    {
+      const G4ElementVector *vec = LayerMaterial[j]->GetElementVector();
+
+      for (const auto& Element : *vec)
+      {
+        int Z = Element->GetZ();
+        analysisManager->CreateH1(Name_det+"_"+to_string(j)+ "_" + to_string(Z), to_string(i*1000+ Element->GetZ()), MaxEnergy, 0, MaxEnergy);
+        counter++;
+      }
+    }
   }
+  
   analysisManager->FinishNtuple(1);
 
-  for (int i = 0; i < Materials.size(); i++)
-  {
-    analysisManager->CreateH1(Materials[i]->GetName(), Materials[i]->GetName(), MaxThickness, 0, MaxThickness);
-  }
+  // for (int i = 0; i < Materials.size(); i++)
+  // {
+    
+  //   analysisManager->CreateH1(Materials[i]->GetName(), Materials[i]->GetName(), MaxThickness, 0, MaxThickness);
+  // }
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

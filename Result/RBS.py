@@ -186,7 +186,6 @@ rootfile = TFile("../build/test.root")
 # plt.scatter(x, y)
 histo = DisplayTH1D(rootfile.Get("RBS_Ekin_weight"), ax = ax)
 
-
 data=[]
 condition = False
 with open("2023W43/RBS_Pos4.mpa", "r") as file:
@@ -204,5 +203,7 @@ data = [max(histo[1])/max(data)*i for i in data]
 x = np.linspace(1, 1.995*1024, 1024)
 plt.plot(x, data, color='red')
 plt.xlim(800, 1100)
+# plt.ylim(1, 1e25)
+# plt.yscale('log')
 plt.show()
 

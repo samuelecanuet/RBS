@@ -12,7 +12,7 @@
 #include "Randomize.hh"
 #include "G4EventManager.hh"
 
-Stepper::Stepper(const G4String &processName) : G4VDiscreteProcess(processName)
+Stepper::Stepper(const G4String &processName, double angle) : G4VDiscreteProcess(processName)
 {
 }
 
@@ -45,7 +45,7 @@ G4VParticleChange *Stepper::PostStepDoIt(const G4Track &aTrack, const G4Step &aS
 
     if (!Flag)
     {
-        if (aStep.GetPostStepPoint()->GetProcessDefinedStep()->GetProcessName() == "CREATOR_PROCESS")
+        if (aStep.GetPostStepPoint()->GetProcessDefinedStep()->GetProcessName() == "CREATOR_PROCESS" && aTrack.GetCurrentStepNumber() < 1e6)
         {
             Flag = false;
             particleChange->SetNumberOfSecondaries(1);
@@ -56,39 +56,14 @@ G4VParticleChange *Stepper::PostStepDoIt(const G4Track &aTrack, const G4Step &aS
             G4ThreeVector Direction = DirectionRBS();
             const G4Element *Element = RandomElement(fMaterial);
             newtrack = new G4Track(new G4DynamicParticle(InitialParticle, Direction, CollisionEnergy(Energy, Element, Direction.theta())), 0, aTrack.GetPosition());
-            G4double coef = 0;
-            if (fMaterial->GetName() == "G4_Al")
-            {
-                if (aStep.GetPostStepPoint()->GetPhysicalVolume()->GetCopyNo() == 1)
-                {
-                    coef = 0.90;
-                }
-                else
-                {
-                    coef = 0.85;
-                }
-            }
-            else if (Element->GetZ() == 6)
-            {
-                coef = 3.84;
-            }
+            // G4cout << "    " << GetElementFractionInMaterial(Element, fMaterial) <<G4endl;
 
-            else
-            {
-                coef = 1.695;
-            }
-
-            //G4cout << "    " << GetElementDensityInMaterial(Element, fMaterial) / fMaterial->GetDensity() <<G4endl;
-
-            G4double weight = coef * GetElementDensityInMaterial(Element, fMaterial) / fMaterial->GetDensity() * CalculateTotalRBSYield(Energy, InitialParticle->GetAtomicMass(), Element->GetA() / (g / mole), InitialParticle->GetAtomicNumber(), Element->GetZ(), Direction.theta());
-
-            size_t processCount = InitialParticle->GetProcessManager()->GetProcessList()->size();
-            G4ProcessVector *vec = InitialParticle->GetProcessManager()->GetProcessList();
-            G4double crossel = 0;
+            G4double weight = GetElementDensityInMaterial(Element, fMaterial) / fMaterial->GetDensity() * CalculateTotalRBSYield(Energy, InitialParticle->GetAtomicMass(), Element->GetA() / (g / mole), InitialParticle->GetAtomicNumber(), Element->GetZ(), Direction.theta());
 
             particleChange->AddSecondary(newtrack);
-            particleChange->GetSecondary(0)->SetWeight(weight);
-            fRunAction->FillH1(fMaterial->GetName(), aTrack.GetPosition().z() / nm);
+            // particleChange->GetSecondary(0)->SetWeight(weight);
+            particleChange->GetSecondary(0)->SetWeight(aStep.GetPostStepPoint()->GetPhysicalVolume()->GetCopyNo() * 1000 + Element->GetZ());
+            // fRunAction->FillH1(fMaterial->GetName(), aTrack.GetPosition().z() / nm);
         }
     }
     return particleChange;
@@ -145,7 +120,7 @@ G4double Stepper::CollisionEnergy(G4double E, const G4Element *Element, G4double
     //  M1 - incident particle, M2 - target atom, E - incident energy, angle - scattering angle
 
     G4double M2 = Element->GetAtomicMassAmu();
-    G4double M1 = 1;
+    G4double M1 = 1.00727647;
     G4double k;
     G4double square = std::sqrt(std::pow(M2 / M1, 2.) - std::pow(sin(angle), 2.));
     G4double M1co = cos(angle);
@@ -158,7 +133,11 @@ G4ThreeVector Stepper::DirectionRBS()
 {
     G4ThreeVector dir;
     G4double THETA = GetRandomTheta(0);
-    G4double phi = static_cast<double>(rand()) / RAND_MAX * (-M_PI / 6) - 3.0 * pi / 7;
+
+    G4double phi = -90 * CLHEP::deg;
+    G4double phiMin = phi - 15 * CLHEP::deg;
+    G4double phiMax = phi + 15 * CLHEP::deg;
+    phi = phiMin + (phiMax - phiMin) * G4UniformRand();
 
     // G4cout << THETA << "   " << phi*CLHEP::deg
     dir[0] = sin(THETA) * cos(phi);
@@ -170,9 +149,10 @@ G4ThreeVector Stepper::DirectionRBS()
 
 G4double Stepper::GetRandomTheta(G4double alpha)
 {
-    G4double minTheta = (135 - 7 - 2 * 5) * CLHEP::deg;
-    G4double maxTheta = (135 + 7) * CLHEP::deg;
-    return G4UniformRand() * (maxTheta - minTheta) + minTheta;
+    G4double theta = -135;
+    G4double minTheta = (theta - 20) * CLHEP::deg;
+    G4double maxTheta = (theta + 20) * CLHEP::deg;
+    return acos(G4UniformRand() * (cos(maxTheta) - cos(minTheta)) + cos(minTheta));
 }
 
 const G4Element *Stepper::RandomElement(G4Material *Material)
@@ -185,9 +165,9 @@ const G4Element *Stepper::RandomElement(G4Material *Material)
     {
         const G4Element *element = Material->GetElement(el);
         sum += element->GetN() * Material->GetFractionVector()[el];
-        //G4cout << element->GetN() << "    " << Material->GetAtomicNumDensityVector()[el] << G4endl;
+        // G4cout << element->GetN() << "    " << Material->GetAtomicNumDensityVector()[el] << G4endl;
     }
-    G4double incr = 0;GetElementDensityInMaterial(Element, fMaterial) /
+    G4double incr = 0;
     for (int el = 0; el < Material->GetNumberOfElements(); el++)
     {
         const G4Element *element = Material->GetElement(el);
@@ -244,16 +224,16 @@ G4double Stepper::CalcDiffRuthXsecCM(G4double E, G4double angleCM, G4double Z1, 
 
 G4double Stepper::CalcDiffRuthXsec(G4double E, G4double M1, G4double M2, G4double angle, G4double Z1, G4double Z2)
 {
-	G4double cose = cos(angle);
-	G4double sine = sin(angle);
-	G4double epsilon = 55.26349406/1000; // in units of e^2/(MeV*fm)
-	G4double FirstTermDenom = 8*pi*epsilon*E;
-	G4double FirstTerm = std::pow((Z1*Z2)/(FirstTermDenom),2.);
-	G4double SecondTerm = 1/(std::pow(sin(angle/2),4.));
-	G4double ThirdTerm = std::pow(M2*cose+std::pow(std::pow(M2,2)-std::pow(M1*sine,2),0.5),2);
-	G4double ThirdTermDenom = M2*std::pow(std::pow(M2,2)-std::pow(M1*sine,2),0.5);
-	G4double fullTerm = FirstTerm*SecondTerm*ThirdTerm/ThirdTermDenom;
-	return fullTerm*10;//fm^2 conversion to milibarns
+    G4double cose = cos(angle);
+    G4double sine = sin(angle);
+    G4double epsilon = 55.26349406 / 1000; // in units of e^2/(MeV*fm)
+    G4double FirstTermDenom = 8 * pi * epsilon * E;
+    G4double FirstTerm = std::pow((Z1 * Z2) / (FirstTermDenom), 2.);
+    G4double SecondTerm = 1 / (std::pow(sin(angle / 2), 4.));
+    G4double ThirdTerm = std::pow(M2 * cose + std::pow(std::pow(M2, 2) - std::pow(M1 * sine, 2), 0.5), 2);
+    G4double ThirdTermDenom = M2 * std::pow(std::pow(M2, 2) - std::pow(M1 * sine, 2), 0.5);
+    G4double fullTerm = FirstTerm * SecondTerm * ThirdTerm / ThirdTermDenom;
+    return fullTerm * 10; // fm^2 conversion to milibarns
 }
 
 G4double Stepper::CalcAndersenScreening(G4double energy_cm, G4double angle_cm, G4double Z1, G4double Z2)

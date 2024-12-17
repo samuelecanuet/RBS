@@ -12,6 +12,7 @@
 #include "G4EmStandardPhysics_option3.hh"
 #include "G4EmStandardPhysics_option4.hh"
 #include "G4EmLivermorePhysics.hh"
+#include "G4EmStandardPhysicsGS.hh"
 //#include "G4EmPenelopePhysics.hh"
 //#include "G4DecayPhysics.hh"
 #include "G4LossTableManager.hh"
@@ -21,7 +22,7 @@
 #include "G4HadronicProcess.hh"
 #include "G4HadronElasticProcess.hh"
 #include "G4Proton.hh"
-#include "G4EmDNAPhysics.hh"
+#include "G4EmSaturation.hh"
 
 #include "Stepper.hh"
 G4VPhysicsConstructor* GetPhysicsConstructor(const G4String& name) {
@@ -70,14 +71,17 @@ void PhysicsList::ConstructProcess() {
   // G4VPhysicsConstructor * emPhysicsList = new G4EmPenelopePhysics();
   // G4VPhysicsConstructor * emPhysicsList = new G4EmLivermorePhysics();
   // G4VPhysicsConstructor * emPhysicsList = new G4EmStandardPhysics(1);
-  G4VPhysicsConstructor * emPhysicsList = new G4EmStandardPhysics_option4(0);
-  //G4VPhysicsConstructor *emPhysicsList = new G4EmStandardPhysicsGS(0);
+  // G4VPhysicsConstructor * emPhysicsList = new G4EmStandardPhysics_option4(0);
+  G4VPhysicsConstructor *emPhysicsList = new G4EmStandardPhysicsGS(0);
   emPhysicsList->ConstructProcess();
+
+  G4EmParameters *emParams = G4EmParameters::Instance();
+  emParams->SetNumberOfBinsPerDecade(200);
 
     // Ajouter votre processus personnalisé
     G4ProcessManager* pmanager = G4Proton::Proton()->GetProcessManager();
     if (pmanager) {
-        pmanager->AddProcess(new Stepper("CREATOR_PROCESS"), -1, -1, 1); // Ajouter votre processus personnalisé ici
+        pmanager->AddProcess(new Stepper("CREATOR_PROCESS", fAngle), -1, -1, 1); // Ajouter votre processus personnalisé ici
         // pmanager->SetProcessOrderingToLast(new Stepper("CREATOR_PROCESS"), idxAtRest);
         // pmanager->SetProcessOrderingToLast(new Stepper("CREATOR_PROCESS"), idxAlongStep);
         // pmanager->SetProcessOrderingToLast(new Stepper("CREATOR_PROCESS"), idxPostStep);
