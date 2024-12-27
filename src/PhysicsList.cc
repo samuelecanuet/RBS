@@ -34,7 +34,7 @@ G4VPhysicsConstructor* GetPhysicsConstructor(const G4String& name) {
 PhysicsList::PhysicsList() :
 	G4VModularPhysicsList() {
 
-	defaultCutValue = 1. * nm;
+	defaultCutValue = 1. * mm;
 
 	//SetVerboseLevel(1);
 

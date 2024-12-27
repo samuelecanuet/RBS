@@ -45,7 +45,7 @@ G4VParticleChange *Stepper::PostStepDoIt(const G4Track &aTrack, const G4Step &aS
 
     if (!Flag)
     {
-        if (aStep.GetPostStepPoint()->GetProcessDefinedStep()->GetProcessName() == "CREATOR_PROCESS" && aTrack.GetCurrentStepNumber() < 1e6)
+        if (aStep.GetPostStepPoint()->GetProcessDefinedStep()->GetProcessName() == "CREATOR_PROCESS" && aTrack.GetCurrentStepNumber() < 1e5)
         {
             Flag = false;
             particleChange->SetNumberOfSecondaries(1);

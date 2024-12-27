@@ -1,84 +1,90 @@
-#include <iostream>
-#include <vector>
-#include <random>
-#include "Math/Functor.h"
-#include "Minuit2/Minuit2Minimizer.h"
+#include "TRandom3.h"
 #include "TGraphErrors.h"
 #include "TCanvas.h"
+#include "TF1.h"
+#include <vector>
+#include <cmath>
 
-// Gaussian function
-double Gaussian(double x, double mean, double sigma) {
-    return exp(-0.5 * pow((x - mean) / sigma, 2)) / (sigma * sqrt(2 * M_PI));
+// Define the model function
+double modelFunc(double *x, double *par) {
+    return par[0] + par[1] * x[0] + par[2] * std::sin(par[3] * x[0]);
 }
 
-double f(double *x, double *par)
-
-// Generate fake data
-void GenerateFakeData(std::vector<double> &xData, std::vector<double> &yData, 
-                      double mean, double sigma, int nPoints, double noiseLevel) {
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::normal_distribution<> gaussian(mean, sigma);
-    std::uniform_real_distribution<> noise(-noiseLevel, noiseLevel);
-
-    for (int i = 0; i < nPoints; ++i) {
-        double x = -3.0 * sigma + i * (6.0 * sigma / nPoints);
-        double y = Gaussian(x, mean, sigma) + noise(gen);
-        xData.push_back(x);
-        yData.push_back(y);
+// Compute the chi-squared value
+double computeChi2(const std::vector<double>& x, const std::vector<double>& y, const std::vector<double>& errors, const double* params) {
+    double chi2 = 0.0;
+    for (size_t i = 0; i < x.size(); ++i) {
+        double *xPtr = const_cast<double*>(&x[i]);
+        double diff = y[i] - modelFunc(xPtr, const_cast<double*>(params));
+        chi2 += (diff * diff) / (errors[i] * errors[i]);
     }
+    return chi2;
 }
 
-int test() {
-    // Generate fake data
-    std::vector<double> xData, yData;
-    double trueMean = 1.0;
-    double trueSigma = 0.5;
-    int nPoints = 50;
-    double noiseLevel = 0.05;
-    GenerateFakeData(xData, yData, trueMean, trueSigma, nPoints, noiseLevel);
+// MCMC sampling using Metropolis-Hastings
+void test() {
+    // Data points
+    std::vector<double> x = {1, 2, 3, 4, 5};
+    std::vector<double> y = {1.1, 2.0, 2.9, 4.1, 5.2};
+    std::vector<double> errors = {0.1, 0.1, 0.1, 0.1, 0.1};
 
-    // Set up minimizer
-    ROOT::Minuit2::Minuit2Minimizer minimizer(ROOT::Minuit2::kMigrad);
-    ROOT::Math::Functor functor(&Gaussian, 2);
-    minimizer.SetMaxFunctionCalls(10000);
-    minimizer.SetTolerance(1e-6);
-    minimizer.SetPrintLevel(1);
-    minimizer.SetFunction(functor);
+    // Initial fit parameters and ranges
+    double params[4] = {1.0, 1.0, 0.0, 1.0}; // Initial guess
+    double stepSize[4] = {0.05, 0.05, 0.01, 0.05}; // Step size for MCMC
+    double accepted = 0, total = 0;
 
-    // Set initial parameter guesses
-    minimizer.SetVariable(0, "mean", 1.0, 0.1);   // Initial guess for mean
-    minimizer.SetVariable(1, "sigma", 0.5, 0.1);  // Initial guess for sigma
+    // Random number generator
+    TRandom3 rand(0);
 
-    // Perform minimization
-    if (!minimizer.Minimize()) {
-        std::cerr << "Minimization failed!" << std::endl;
-        return 1;
+    // Store MCMC samples
+    const int nSteps = 10000;
+    std::vector<std::vector<double>> samples(nSteps, std::vector<double>(4));
+
+    // Run MCMC
+    for (int step = 0; step < nSteps; ++step) {
+        // Propose new parameters
+        double newParams[4];
+        for (int i = 0; i < 4; ++i) {
+            newParams[i] = params[i] + stepSize[i] * rand.Gaus();
+        }
+
+        // Calculate chi-squared for old and new parameters
+        double chi2Old = computeChi2(x, y, errors, params);
+        double chi2New = computeChi2(x, y, errors, newParams);
+
+        // Accept or reject
+        double alpha = std::exp(-0.5 * (chi2New - chi2Old));
+        if (alpha >= 1.0 || rand.Uniform() < alpha) {
+            for (int i = 0; i < 4; ++i) {
+                params[i] = newParams[i];
+            }
+            accepted++;
+        }
+        total++;
+
+        // Store sample
+        for (int i = 0; i < 4; ++i) {
+            samples[step][i] = params[i];
+        }
     }
 
-    // Get the results
-    const double *params = minimizer.X();
-    std::cout << "Fit results:" << std::endl;
-    std::cout << "Mean = " << params[0] << std::endl;
-    std::cout << "Sigma = " << params[1] << std::endl;
-
-    // Plot the data and the fit
-    TGraphErrors graph(nPoints);
-    for (int i = 0; i < nPoints; ++i) {
-        graph.SetPoint(i, xData[i], yData[i]);
+    // Analyze MCMC samples
+    std::vector<double> means(4, 0.0);
+    std::vector<double> variances(4, 0.0);
+    for (const auto& sample : samples) {
+        for (int i = 0; i < 4; ++i) {
+            means[i] += sample[i];
+            variances[i] += sample[i] * sample[i];
+        }
     }
-    graph.SetTitle("Gaussian Fit; x; y");
-    graph.SetMarkerStyle(20);
+    for (int i = 0; i < 4; ++i) {
+        means[i] /= nSteps;
+        variances[i] = std::sqrt(variances[i] / nSteps - means[i] * means[i]);
+    }
 
-    // Plot the Gaussian fit curve
-    TCanvas canvas("canvas", "Gaussian Fit", 800, 600);
-    graph.Draw("AP");
-
-    TF1 fitFunction("fitFunction", "gaus", -3.0 * trueSigma, 3.0 * trueSigma);
-    fitFunction.SetParameters(1.0, params[0], params[1]); // Set amplitude, mean, and sigma
-    fitFunction.Draw("SAME");
-
-    canvas.SaveAs("gaussian_fit.png");
-
-    return 0;
+    // Output results
+    for (int i = 0; i < 4; ++i) {
+        std::cout << "Parameter " << i << ": Mean = " << means[i] << ", StdDev = " << variances[i] << std::endl;
+    }
+    std::cout << "Acceptance Ratio: " << accepted / total << std::endl;
 }

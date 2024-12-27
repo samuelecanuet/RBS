@@ -41,10 +41,10 @@ G4bool Detector::ProcessHits(G4Step *step, G4TouchableHistory *)
 
     int num_of_hist  = 3 + 3;
 
-    fRunAction->FillNtupleDColumn(1, fNumber*3, Ekin);
-    fRunAction->FillNtupleDColumn(1, fNumber*3+1, Ekin_res);
-    fRunAction->FillNtupleDColumn(1, fNumber*3+2, step->GetTrack()->GetWeight());
-    fRunAction->AddNtupleRow(1);
+    // fRunAction->FillNtupleDColumn(1, fNumber*3, Ekin);
+    // fRunAction->FillNtupleDColumn(1, fNumber*3+1, Ekin_res);
+    // fRunAction->FillNtupleDColumn(1, fNumber*3+2, step->GetTrack()->GetWeight());
+    // fRunAction->AddNtupleRow(1);
 
     fRunAction->FillH1(fName + "_Ekin", Ekin);
     // fRunAction->FillH1Map(100*fNumber+1, Ekin_res,  step->GetTrack()->GetWeight());

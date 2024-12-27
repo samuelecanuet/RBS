@@ -1,0 +1,90 @@
+#!/bin/bash
+
+# Define file paths
+rootCRADLEfile="../../../../data333/lecanuet/data/"
+rootGeant4file="../../../data333/lecanuet/Result/"
+
+rootCRADLEfile="../../../../../../mnt/hgfs/shared-2/"
+rootGeant4file="../../../../../../mnt/hgfs/shared-2/2024_DATA/"
+
+suffixe=""
+
+# Clean up previous tmp directory
+rm -rf tmp/*
+
+# Colors for output
+RED="\e[1;31m"
+GREEN="\e[1;32m"
+YELLOW="\e[1;33m"
+COLOR="\e[0m"
+
+# Number of processes
+nProcess=6
+
+# Log file cleanup
+echo -e "$RED"
+rm -vf "LOG/During_$Nuclei.txt"
+echo -e "$COLOR"
+
+# Time tracking
+TimeStart=$SECONDS
+
+# Initialize arrays and variables
+TH=()
+THRun=()
+Saver=0
+RunStart=0  # Define RunStart (assuming it was missing in the original code)
+RunN=$(($RunStart + $nProcess))
+TimeCheck=3  # in seconds
+
+i=0
+
+# Define the arrays
+
+al_thickness=("50" "150")
+mylar_thickness_thick=("5950" "6150")
+mylar_thickness_thin=("400" "600")
+thickness_step=5
+
+# Loop over combinations
+
+# Starting al_thickness then loop with step and finish with al_thickness
+for ((a = 0; a < 40; a++)); do
+    for ((m = 0; m < 40; m++)); do
+        # Calculate thicknesses
+        Al_thickness=$(echo "${al_thickness[0]} + $a * $thickness_step" | bc)
+        Mylar_thickness_thin=$(echo "${mylar_thickness_thin[0]} + $m * $thickness_step" | bc)
+        Mylar_thickness_thick=$(echo "${mylar_thickness_thick[0]} + $m * $thickness_step" | bc)
+
+        # Run the RBS_All_forMCMC function in the background
+        RBS_All_forMCMC $Al_thickness $Mylar_thickness_thin $Al_thickness $Mylar_thickness_thick 20 1.97 72 3.79 0 &
+        # Store the process ID in the TH array
+        TH[$i]=$!
+        
+        # Increment index
+        i=$(($i + 1))
+
+        # If the number of running processes reaches nProcess, wait for them to finish
+        if [ $i -eq $nProcess ]; then
+            # Wait for the first process to finish
+            wait ${TH[0]}
+            # Shift the array so that we track the next process
+            TH=("${TH[@]:1}")
+            i=$((i - 1))
+        fi
+    done
+done
+
+# Wait for processes to finish
+wait
+TimeEnd=$SECONDS
+
+# Calculate total duration
+Duree=$(($TimeEnd - $TimeStart))
+Second=$(printf "%02d" "$(($Duree % 60))")
+Minute=$(printf "%02d" "$((($Duree / 60) % 60))")
+Heure=$(printf "%02d" "$((($Duree / 3600) % 24))")
+Jour=$(printf "%d" "$((($Duree / (3600 * 24))))")
+
+# Output total duration
+echo -e "$RED Duree total : ${Jour} jours, ${Heure}:${Minute}:${Second}"
