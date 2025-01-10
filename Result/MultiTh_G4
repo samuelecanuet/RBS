@@ -35,14 +35,14 @@ THRun=()
 Saver=0
 RunStart=0  # Define RunStart (assuming it was missing in the original code)
 RunN=$(($RunStart + $nProcess))
-TimeCheck=3  # in seconds
+TimeCheck=2  # in seconds
 
 i=0
 
 # Define the arrays
 
-al_thickness=("50" "150")
-mylar_thickness_thick=("5950" "6150")
+al_thickness=("5" "205")
+mylar_thickness_thick=("5900" "6100")
 mylar_thickness_thin=("400" "600")
 thickness_step=5
 
@@ -57,7 +57,7 @@ for ((a = 0; a < 40; a++)); do
         Mylar_thickness_thick=$(echo "${mylar_thickness_thick[0]} + $m * $thickness_step" | bc)
 
         # Run the RBS_All_forMCMC function in the background
-        RBS_All_forMCMC $Al_thickness $Mylar_thickness_thin $Al_thickness $Mylar_thickness_thick 20 1.97 72 3.79 0 &
+        RBS_All_forMCMC $Al_thickness $Mylar_thickness_thin $Al_thickness $Mylar_thickness_thick 20 1.97 72 3.79 10 &
         # Store the process ID in the TH array
         TH[$i]=$!
         

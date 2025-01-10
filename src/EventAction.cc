@@ -46,6 +46,7 @@ void EventAction::BeginOfEventAction(const G4Event *event)
 
 void EventAction::EndOfEventAction(const G4Event *event)
 {
+    
 }
 
 void EventAction::AddParticle(G4ThreeVector position, G4ThreeVector direction, G4double energy, G4double time, G4Material *mat)

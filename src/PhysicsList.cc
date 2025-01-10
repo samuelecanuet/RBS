@@ -25,6 +25,8 @@
 #include "G4EmSaturation.hh"
 
 #include "Stepper.hh"
+#include "G4StepLimiterPhysics.hh"
+
 G4VPhysicsConstructor* GetPhysicsConstructor(const G4String& name) {
 	return G4PhysicsConstructorRegistry::Instance()->GetPhysicsConstructor(name);
 }
@@ -86,6 +88,9 @@ void PhysicsList::ConstructProcess() {
         // pmanager->SetProcessOrderingToLast(new Stepper("CREATOR_PROCESS"), idxAlongStep);
         // pmanager->SetProcessOrderingToLast(new Stepper("CREATOR_PROCESS"), idxPostStep);
     }
+
+  // G4StepLimiterPhysics *process = new G4StepLimiterPhysics();
+  // process->ConstructProcess();
 }
 
 

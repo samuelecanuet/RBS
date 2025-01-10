@@ -25,6 +25,8 @@
 /layer 2 G4_MYLAR 6100 nm
 /layer 3 G4_Al 130 nm
 
-/run/printProgress 1
-/run/beamOn 50
+/run/printProgress 10
+/run/beamOn 500
 
+
+#512906

@@ -31,6 +31,8 @@ DetectorConstruction::DetectorConstruction()
     : G4VUserDetectorConstruction()
 {
   msgg = new Messenger(this);
+  // myStepLimit = new G4UserLimits();
+  // myStepLimit->SetMaxAllowedStep(1 * nm);
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -128,6 +130,7 @@ void DetectorConstruction::SetTarget(vector<pair<G4Material *, G4double>> Target
     Logic_Layers.push_back(Logic_Layer);
     Layers.push_back(new Layer(Layer_index - 1, layer.first, fArea, fAngle, fDistance));
     Logic_Layer->SetSensitiveDetector(Layers[Layers.size() - 1]);
+    // Logic_Layer->SetUserLimits(myStepLimit);
 
     Total_Thickness += layer.second;
   }

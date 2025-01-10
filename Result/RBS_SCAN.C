@@ -627,20 +627,27 @@ void RBS_SCAN()
     cout << "TOTAL: " << TOTAL << endl;
 
     f = new TFile("Correlation.root", "RECREATE");
-    // TFile* f_save = new TFile("Correlation_Saved.root", "READ");
-    // TTree *tree = (TTree *)f_save->Get("Tree");
-    // TTreeReader *Reader = new TTreeReader(tree);
-    // TTreeReaderValue<double> al1(Reader, "al1");
-    // TTreeReaderValue<double> mylar1(Reader, "mylar1");
-    // TTreeReaderValue<double> al2(Reader, "al2");
-    // TTreeReaderValue<double> mylar2(Reader, "mylar2");
-    // TTreeReaderValue<double> o1(Reader, "o1");
-    // TTreeReaderValue<double> c1(Reader, "c1");
-    // TTreeReaderValue<double> o3(Reader, "o3");
-    // TTreeReaderValue<double> c3(Reader, "c3");
-    // TTreeReaderValue<double> chi2(Reader, "chi2");
 
-    // TTreeReaderValue<double> par_saved[8] = {al1, mylar1, al2, mylar2, o1, c1, o3, c3};
+    // renaming correlation_saviing in correlation_saved :
+    string del = "rm Correlation_Saved.root";
+    system(del.c_str());
+    string command = "mv Correlation_Saving.root Correlation_Saved.root";
+    system(command.c_str());
+
+    TFile* f_save = new TFile("Correlation_Saved.root", "READ");
+    TTree *tree = (TTree *)f_save->Get("Tree");
+    TTreeReader *Reader = new TTreeReader(tree);
+    TTreeReaderValue<double> al1(*Reader, "al1");
+    TTreeReaderValue<double> mylar1(*Reader, "mylar1");
+    TTreeReaderValue<double> al2(*Reader, "al2");
+    TTreeReaderValue<double> mylar2(*Reader, "mylar2");
+    TTreeReaderValue<double> o1(*Reader, "o1");
+    TTreeReaderValue<double> c1(*Reader, "c1");
+    TTreeReaderValue<double> o3(*Reader, "o3");
+    TTreeReaderValue<double> c3(*Reader, "c3");
+    TTreeReaderValue<double> chi2_saved(*Reader, "chi2");
+
+    TTreeReaderValue<double> par_saved[8] = {al1, mylar1, al2, mylar2, o1, c1, o3, c3};
 
     vector<double> par_saving = {0, 0, 0, 0, 0, 0, 0, 0};
     double chi2_saving;
@@ -681,19 +688,61 @@ void RBS_SCAN()
                     par_it[second] = par2;
 
                     const double par[10] = {
-                        par_it[0], par_it[1],
-                        par_it[2], par_it[3],
-                        par_it[4], par_it[5], 0,
-                        par_it[6], par_it[7], 0,
+                        par_it[0],
+                        par_it[1],
+                        par_it[2],
+                        par_it[3],
+                        par_it[4],
+                        par_it[5],
+                        0,
+                        par_it[6],
+                        par_it[7],
+                        0,
 
                     };
 
-                    flag_saving = false;
-                    double Chi2 = FunctionToMinimize(par);
+                    bool flag_saved = false;
+                    double chi2 = 0;
+                    if (Reader->GetCurrentEntry() < 5600)
+                    {
+                        try
+                        {
+                            while (Reader->Next())
+                            {
+                                if (*al1 == par_it[0] && *mylar1 == par_it[1] && *al2 == par_it[2] && *mylar2 == par_it[3] && *o1 == par_it[4] && *c1 == par_it[5] && *o3 == par_it[6] && *c3 == par_it[7])
+                                {
+                                    flag_saved = true;
+                                    break;
+                                }
+                            }
 
-                    H_Correlation[first][second]->Fill(par1, par2, Chi2);
+                            if (flag_saved)
+                            {
+                                chi2 = *chi2_saved;
+                            }
+                        }
+                        catch (const std::exception &e)
+                        {
+                            std::cerr << "Error reading entries: " << e.what() << std::endl;
+                            flag_saved = false;
+                        }
+                        catch (...)
+                        {
+                            std::cerr << "Unknown error occurred while reading entries." << std::endl;
+                            flag_saved = false;
+                        }
+                    }
 
-                    chi2_saving = Chi2;
+                    if (!flag_saved)
+                    {
+                        Reader->Restart();
+                        chi2 = FunctionToMinimize(par);
+                    }
+
+                    H_Correlation[first][second]->Fill(par1, par2, chi2);
+
+                    f_saving->cd();
+                    chi2_saving = chi2;
                     par_saving = par_it;
                     t->Fill();
                     t->AutoSave("FlushBaskets");
@@ -703,12 +752,13 @@ void RBS_SCAN()
                     // ProgressCounter(counter_progress, TOTAL, "Progress: ");
                     ProgressBar(counter_progress, TOTAL, start, Current, "Progress: ");
                 }
-                f->cd();
+                f_saving->cd();
                 H_Correlation[first][second]->Write("", TObject::kOverwrite);
             }
 
             c->cd(count);
             H_Correlation[first][second]->Draw("colz");
+            c->Update();
         }
     }
 

@@ -112,7 +112,7 @@
 #/vis/viewer/flush
 
 # General Particle Source parameters 
-
+/tracking/verbose 1
 ### GENERATOR ###
 /particle proton
 /energy 1.2 MeV

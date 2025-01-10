@@ -21,6 +21,7 @@ public:
     // G4double AtRestGetPhysicalInteractionLength(const G4Track&, G4ForceCondition*);
 
     RunAction* fRunAction;
+    double LastHit;
 
      G4double CollisionEnergy(G4double Energy, const G4Element *Element, G4double Angle);
   G4ThreeVector DirectionRBS();

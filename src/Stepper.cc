@@ -36,17 +36,18 @@ G4VParticleChange *Stepper::PostStepDoIt(const G4Track &aTrack, const G4Step &aS
 {
     G4VParticleChange *particleChange = new G4VParticleChange();
 
-    // if (savedeventID != G4EventManager::GetEventManager()->GetConstCurrentEvent()->GetEventID())
+    // if (savedeventID < G4EventManager::GetEventManager()->GetConstCurrentEvent()->GetEventID())
     // {
-    //     value = G4UniformRand() * 700;
     //     savedeventID = G4EventManager::GetEventManager()->GetConstCurrentEvent()->GetEventID();
-    //     Flag = false;
+    //     LastHit = -999;
     // }
 
     if (!Flag)
     {
-        if (aStep.GetPostStepPoint()->GetProcessDefinedStep()->GetProcessName() == "CREATOR_PROCESS" && aTrack.GetCurrentStepNumber() < 1e5)
+        // cout << (int)LastHit << "   " << (int)(aStep.GetPostStepPoint()->GetPosition().z() / nm) << endl;
+        if (aStep.GetPostStepPoint()->GetProcessDefinedStep()->GetProcessName() == "CREATOR_PROCESS" )//&& (int)LastHit != (int)(aStep.GetPostStepPoint()->GetPosition().z()*nm))
         {
+            // LastHit = aStep.GetPostStepPoint()->GetPosition().z()/nm;
             Flag = false;
             particleChange->SetNumberOfSecondaries(1);
             G4Material *fMaterial = aTrack.GetMaterial();

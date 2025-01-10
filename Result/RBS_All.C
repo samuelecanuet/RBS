@@ -8,6 +8,13 @@ using namespace ROOT::Math;
 #include "Math/Minimizer.h"
 #include "Math/Functor.h"
 #include "Math/Factory.h"
+#include <iostream>
+#include <vector>
+#include <TMatrixD.h>
+#include <TDecompLU.h>
+#include <Math/Minimizer.h>
+#include <Math/Functor.h>
+#include <TMinuitMinimizer.h>
 
 bool flag_saving = false;
 
@@ -50,6 +57,9 @@ map<string, map<double, map<string, TH1D *>>> Carbon_MAP;
 map<string, map<double, map<string, TH1D *>>> Al2_MAP;
 
 map<string, map<double, map<string, double>>> CHI2_MAP;
+
+map<string, double> Optimum_Al;
+map<string, double> Optimum_Mylar;
 
 
 TH1D *Exp_Hist = new TH1D("Exp_Hist", "Experimental RBS", 1024, 0, 1024);
@@ -190,6 +200,21 @@ void CreateRootHist(string Run_Type = "RBS")
     }
 }
 
+double Chi2Test(TH1D* h1, TH1D* h2, double fMin, double fMax)
+{
+    double chi2 = 0;
+    for (int i = 0; i < h1->GetNbinsX(); i++)
+    {
+        double diff = h1->GetBinContent(i) - h2->GetBinContent(i);
+        if (h1->GetBinError(i) + h2->GetBinError(i) == 0)
+            continue;
+        if (h1->GetBinCenter(i) < fMin || h1->GetBinCenter(i) > fMax)
+            continue;
+        chi2 += diff * diff / (pow(h1->GetBinError(i), 2) + pow(h2->GetBinError(i), 2));
+    }
+    return chi2;
+}
+
 double FunctionToMinimize(const double *par)
 {
     
@@ -277,9 +302,11 @@ double FunctionToMinimize(const double *par)
                     Sim_File = new TFile(filename.c_str(), "READ");
                     if (Sim_File->IsZombie())
                     {
-                        string new_macro_filename = MacroModifier(Macro_File, type, energy, face);
-                        LaunchG4(new_macro_filename);
-                        Sim_File = new TFile(filename.c_str(), "READ");
+
+                        return 1000;
+                        // string new_macro_filename = MacroModifier(Macro_File, type, energy, face);
+                        // LaunchG4(new_macro_filename);
+                        // Sim_File = new TFile(filename.c_str(), "READ");
                     }
 
                     Al1 = (TH1D *)Sim_File->Get("RBS_0_13");
@@ -289,10 +316,13 @@ double FunctionToMinimize(const double *par)
 
                     int integral = Exp_Hist_MAP[type][energy][face]->Integral();
 
-                    Al1->Scale(ScaleAl1_MAP[type][energy][face] / Al1->Integral() * coef);
-                    Oxygen->Scale(ScaleOxygen_MAP[type][energy][face] / Oxygen->Integral() * coef);
-                    Carbon->Scale(ScaleCarbon_MAP[type][energy][face] / Carbon->Integral() * coef);
-                    Al2->Scale(ScaleAl2_MAP[type][energy][face] / Al2->Integral() * coef);
+                    double TH_coef_Al = Thickness_Al1_MAP[type]/Optimum_Al[type];
+                    double TH_coef_Mylar = Thickness_Mylar_MAP[type]/Optimum_Mylar[type];
+
+                    Al1->Scale(ScaleAl1_MAP[type][energy][face] / Al1->Integral() * coef * TH_coef_Al);
+                    Oxygen->Scale(ScaleOxygen_MAP[type][energy][face] / Oxygen->Integral() * coef * TH_coef_Mylar);
+                    Carbon->Scale(ScaleCarbon_MAP[type][energy][face] / Carbon->Integral() * coef * TH_coef_Mylar);
+                    Al2->Scale(ScaleAl2_MAP[type][energy][face] / Al2->Integral() * coef * TH_coef_Al);
 
                     Sim_Hist = (TH1D *)Al1->Clone("Sim_Hist");
                     Sim_Hist->Reset();
@@ -310,12 +340,14 @@ double FunctionToMinimize(const double *par)
                     for (int bin = 0; bin < Sim_Hist->GetNbinsX(); bin++)
                     {
                         double res = 0;
+                        double err = 0;
                         for (int bin_c = 0; bin_c < Sim_Hist->GetNbinsX(); bin_c++)
                         {
                             res += Gaussian->Eval(Sim_Hist->GetBinCenter(bin) - Sim_Hist->GetBinCenter(bin_c)) * Sim_Hist->GetBinContent(bin_c);
+                            err += Gaussian->Eval(Sim_Hist->GetBinCenter(bin) - Sim_Hist->GetBinCenter(bin_c)) * Sim_Hist->GetBinError(bin_c);
                         }
                         Sim_Hist_conv->SetBinContent(bin, res);
-                        Sim_Hist_conv->SetBinError(bin, sqrt(res));
+                        Sim_Hist_conv->SetBinError(bin, err);
                     }
 
                     Al1_MAP[type][energy][face] = (TH1D *)Al1->Clone(("Al1_" + face).c_str());
@@ -345,7 +377,7 @@ double FunctionToMinimize(const double *par)
                 }
 
                 //////////////////// ############### EXPERIMENTAL ############### ////////////////////
-                Exp_Hist_calib = (TH1D *)Al1_MAP[type][energy][face]->Clone("Exp_Hist_calib");
+                Exp_Hist_calib = (TH1D *)Sim_Hist_conv_MAP[type][energy][face]->Clone("Exp_Hist_calib");
                 Exp_Hist_calib->Reset();
                 int integral = Exp_Hist_MAP[type][energy][face]->Integral();
 
@@ -361,14 +393,15 @@ double FunctionToMinimize(const double *par)
                 Exp_Hist_calib_MAP[type][energy][face]->GetXaxis()->SetRangeUser(fMIN_MAP[type][energy], fMAX_MAP[type][energy]);
                 Sim_Hist_conv_MAP[type][energy][face]->GetXaxis()->SetRangeUser(fMIN_MAP[type][energy], fMAX_MAP[type][energy]);
 
-                CHI2_MAP[type][energy][face] = Exp_Hist_calib_MAP[type][energy][face]->Chi2Test(Sim_Hist_conv_MAP[type][energy][face], "CHI2/NDF");
+                // CHI2_MAP[type][energy][face] = Exp_Hist_calib_MAP[type][energy][face]->Chi2Test(Sim_Hist_conv_MAP[type][energy][face], "UU CHI2/NDF");
+                CHI2_MAP[type][energy][face] = Chi2Test(Exp_Hist_calib_MAP[type][energy][face], Sim_Hist_conv_MAP[type][energy][face], fMIN_MAP[type][energy], fMAX_MAP[type][energy]) / (fMAX_MAP[type][energy] - fMIN_MAP[type][energy]);
                 CHI2_SUM += CHI2_MAP[type][energy][face];
             }
         }
     }
 
     // PRINTING CHI2
-    cout << "CHI2: " << CHI2_SUM/8 << endl;
+    cout << "CHI2: " << CHI2_SUM << endl;
     cout << "Calibration Offset [THIN]: " << Calibration_Offset_MAP[1.2] << " keV" << endl;
     cout << "Calibration Coefficient [THIN]: " << Calibration_Coefficient_MAP[1.2] << " keV/CH" << endl;
     cout << "Calibration Offset [THICK]: " << Calibration_Offset_MAP[3.0] << " keV" << endl;
@@ -400,13 +433,63 @@ double FunctionToMinimize(const double *par)
     return CHI2_SUM;
 }
 
+TMatrixD GetCovarianceMatrix(ROOT::Math::Minimizer* minimizer, int nParams) {
+    std::vector<double> covMatrixArray(nParams * nParams);
+    minimizer->GetCovMatrix(covMatrixArray.data());
+
+    TMatrixD covarianceMatrix(nParams, nParams);
+    for (int i = 0; i < nParams; ++i) {
+        for (int j = 0; j < nParams; ++j) {
+            covarianceMatrix[i][j] = covMatrixArray[i * nParams + j];
+        }
+    }
+
+    return covarianceMatrix;
+}
+
+// Function to extract submatrix
+TMatrixD ExtractSubmatrix(const TMatrixD& matrix, const std::vector<int>& indices) {
+    int n = indices.size();
+    TMatrixD submatrix(n, n);
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++j) {
+            submatrix[i][j] = matrix[indices[i]][indices[j]];
+        }
+    }
+    return submatrix;
+}
+// Solve for delta_a given Delta and CprojInv
+std::vector<double> SolveDeltaA(const TMatrixD& CprojInv, double delta) {
+    int n = CprojInv.GetNrows(); // Number of parameters
+    std::vector<double> delta_a(n, 0.0);
+
+    // Decompose [CprojInv] into eigenvalues and eigenvectors
+    TVectorD eigenvalues(n);
+    TMatrixD eigenvectors = CprojInv.EigenVectors(eigenvalues);
+
+    // Scale eigenvectors by sqrt(Delta / eigenvalue)
+    for (int i = 0; i < n; ++i) {
+        if (eigenvalues[i] <= 0) {
+            std::cerr << "Error: Non-positive eigenvalue encountered." << std::endl;
+            exit(1);
+        }
+        double scale = std::sqrt(delta / eigenvalues[i]);
+        for (int j = 0; j < n; ++j) {
+            delta_a[j] += scale * eigenvectors[j][i]; // Scale and sum eigenvectors
+        }
+    }
+
+    return delta_a;
+}
+
+
 void RBS_All()
 {
     cout << "in macro" << endl;
 
     fSave = new TFile("RBS_Saving.root", "UPDATE");
 
-    f = new TFile("RBS_Results.root", "RECREATE");
+    f = new TFile("RBS_All_Results.root", "RECREATE");
 
 
     /// EXPERIMENTAL FILE FROM AIFIRA ///
@@ -458,14 +541,22 @@ void RBS_All()
 // - THICK	3	A	1.16752
 // - THICK	3	B	0.910434
 
+    //////////////////
+    Optimum_Al["THICK"] = 110;
+    Optimum_Mylar["THICK"] = 6100;
+
+    Optimum_Al["THIN"] = 85;
+    Optimum_Mylar["THIN"] = 525;   
+    //////////////////
+
 
     // OFFSET
     FaceOffSet["A"] = "-2";
-    FaceOffSet["B"] = "5.25";  
+    FaceOffSet["B"] = "5";  
 
     // THICKNESS
-    Thickness_Al1_MAP["THIN"] = 73;
-    Thickness_Mylar_MAP["THIN"] = 538;
+    Thickness_Al1_MAP["THIN"] =  85;
+    Thickness_Mylar_MAP["THIN"] = 525;
     Thickness_Al2_MAP["THIN"] = 85;
 
     Thickness_Al1_MAP["THICK"] = 110;
@@ -473,8 +564,8 @@ void RBS_All()
     Thickness_Al2_MAP["THICK"] = 110;
 
     //moi
-    Calibration_Offset_MAP[1.2] = 25.25;
-    Calibration_Coefficient_MAP[1.2] = 1.9622;
+    Calibration_Offset_MAP[1.2] = 22.0887;  //4.19 3.19 1.25 1.15 3.48 4.25
+    Calibration_Coefficient_MAP[1.2] = 1.9681;
 
     Calibration_Offset_MAP[3.0] = 288.154/4;
     Calibration_Coefficient_MAP[3.0] = 3.72882;
@@ -551,29 +642,29 @@ void RBS_All()
     minimizer->SetFunction(functor);
     // CALIBRATION PARAMETERS
     // minimizer->SetFixedVariable(0, "Calibration Offset [1.2]", Calibration_Offset_MAP[1.2]);
-    minimizer->SetLimitedVariable(0, "Calibration Offset [1.2]", Calibration_Offset_MAP[1.2], 20, 0, 200);
+    minimizer->SetLimitedVariable(0, "Calibration Offset [1.2]", Calibration_Offset_MAP[1.2], 10, 0, 50);
 
     // minimizer->SetFixedVariable(1, "Calibration Coefficient [1.2]", Calibration_Coefficient_MAP[1.2]);
     minimizer->SetLimitedVariable(1, "Calibration Coefficient [1.2]", Calibration_Coefficient_MAP[1.2], 0.1, 0.9 * Calibration_Coefficient_MAP[1.2], 2.01);
 
-    minimizer->SetFixedVariable(2, "Calibration Offset [3.0]", Calibration_Offset_MAP[3.0]);
-    // minimizer->SetLimitedVariable(2, "Calibration Offset [3.0]", Calibration_Offset_MAP[3.0], 20, 0, 500);
+    // minimizer->SetFixedVariable(2, "Calibration Offset [3.0]", Calibration_Offset_MAP[3.0]);
+    minimizer->SetLimitedVariable(2, "Calibration Offset [3.0]", Calibration_Offset_MAP[3.0], 20, 20, 150);
 
-     minimizer->SetFixedVariable(3, "Calibration Coefficient [3.0]", Calibration_Coefficient_MAP[3.0]);
-    // minimizer->SetLimitedVariable(3, "Calibration Coefficient [3.0]", Calibration_Coefficient_MAP[3.0], 0.2, 0.9 * Calibration_Coefficient_MAP[3.0], 3.8);  
+    //  minimizer->SetFixedVariable(3, "Calibration Coefficient [3.0]", Calibration_Coefficient_MAP[3.0]);
+    minimizer->SetLimitedVariable(3, "Calibration Coefficient [3.0]", Calibration_Coefficient_MAP[3.0], 0.2, 0.9 * Calibration_Coefficient_MAP[3.0], 3.8);  
 
 
     // THICKNESS PARAMETERS
     // minimizer->SetFixedVariable(4, "Al1 Thickness [THIN]", Thickness_Al1_MAP["THIN"]);
     minimizer->SetLimitedVariable(4, "Al1 Thickness [THIN]", Thickness_Al1_MAP["THIN"], 20, 50, 150);
     // minimizer->SetFixedVariable(5, "Mylar Thickness [THIN]", Thickness_Mylar_MAP["THIN"]);
-    minimizer->SetLimitedVariable(5, "Mylar Thickness [THIN]", Thickness_Mylar_MAP["THIN"], 10, 550, 650);
+    minimizer->SetLimitedVariable(5, "Mylar Thickness [THIN]", Thickness_Mylar_MAP["THIN"], 10, 400, 600);
     minimizer->SetFixedVariable(6, "Al2 Thickness [THIN]", Thickness_Al2_MAP["THIN"]);
     // minimizer->SetLimitedVariable(6, "Al2 Thickness [THIN]", Thickness_Al2_MAP["THIN"], 20, 50, 200);
-    minimizer->SetFixedVariable(7, "Al1 Thickness [THICK]", Thickness_Al1_MAP["THICK"]);
-    // minimizer->SetLimitedVariable(7, "Al1 Thickness [THICK]", Thickness_Al1_MAP["THICK"], 20, 50, 150);
-    minimizer->SetFixedVariable(8, "Mylar Thickness [THICK]", Thickness_Mylar_MAP["THICK"]);
-    // minimizer->SetLimitedVariable(8, "Mylar Thickness [THICK]", Thickness_Mylar_MAP["THICK"], 10, 5800, 6300);
+    // minimizer->SetFixedVariable(7, "Al1 Thickness [THICK]", Thickness_Al1_MAP["THICK"]);
+    minimizer->SetLimitedVariable(7, "Al1 Thickness [THICK]", Thickness_Al1_MAP["THICK"], 20, 50, 150);
+    // minimizer->SetFixedVariable(8, "Mylar Thickness [THICK]", Thickness_Mylar_MAP["THICK"]);
+    minimizer->SetLimitedVariable(8, "Mylar Thickness [THICK]", Thickness_Mylar_MAP["THICK"], 10, 5800, 6300);
     minimizer->SetFixedVariable(9, "Al2 Thickness [THICK]", Thickness_Al2_MAP["THICK"]);
     // minimizer->SetLimitedVariable(9, "Al2 Thickness [THICK]", Thickness_Al2_MAP["THICK"], 20, 50, 200);
 
@@ -600,12 +691,61 @@ void RBS_All()
     // minimizer->Minimize();
     // const double *par = minimizer->X();
 
+
+    // int nParams = minimizer->NDim();
+
+    // // Retrieve the covariance matrix
+    // TMatrixD covarianceMatrix = GetCovarianceMatrix(minimizer, nParams);
+
+    // // Print the covariance matrix
+    // std::cout << "Covariance Matrix:" << std::endl;
+    // covarianceMatrix.Print();
+
+    // // Extract submatrix for parameters of interest
+    // std::vector<int> indicesOfInterest = {0, 1, 2, 3, 4, 5, 7, 8};
+    // TMatrixD Cproj = ExtractSubmatrix(covarianceMatrix, indicesOfInterest);
+
+    // // Print the projected submatrix
+    // std::cout << "Projected Covariance Submatrix:" << std::endl;
+    // Cproj.Print();
+
+    // // Invert the submatrix
+    // TDecompLU decompLU(Cproj);
+    // if (!decompLU.Invert(Cproj)) {
+    //     std::cerr << "Error: Failed to invert submatrix." << std::endl;
+    //     return -1;
+    // }
+    // TMatrixD CprojInv = Cproj;
+
+    // // Define known Delta value
+    // double delta = 9.3;  // Example: Known chi-square value
+
+    // // Solve for delta_a
+    // std::vector<double> delta_a = SolveDeltaA(CprojInv, delta);
+
+    // // Output the result
+    // std::cout << "The delta_a vector is:" << std::endl;
+    // for (size_t i = 0; i < delta_a.size(); ++i) {
+    //     std::cout << "delta_a[" << i << "] = " << delta_a[i] << std::endl;
+    // }
+
     const double par[10] = {
         Calibration_Offset_MAP[1.2], Calibration_Coefficient_MAP[1.2],
         Calibration_Offset_MAP[3.0], Calibration_Coefficient_MAP[3.0],
         Thickness_Al1_MAP["THIN"], Thickness_Mylar_MAP["THIN"], Thickness_Al2_MAP["THIN"],
         Thickness_Al1_MAP["THICK"], Thickness_Mylar_MAP["THICK"], Thickness_Al2_MAP["THICK"]
     };
+
+    // print errors
+    cout << "Calibration Offset [1.2]: " << par[0] << " +/- " << minimizer->Errors()[0] << " keV" << endl;
+    cout << "Calibration Coefficient [1.2]: " << par[1] << " +/- " << minimizer->Errors()[1] << " keV/CH" << endl;
+    cout << "Calibration Offset [3.0]: " << par[2] << " +/- " << minimizer->Errors()[2] << " keV" << endl;
+    cout << "Calibration Coefficient [3.0]: " << par[3] << " +/- " << minimizer->Errors()[3] << " keV/CH" << endl;
+    cout << "Al1 Thickness [THIN]: " << par[4] << " +/- " << minimizer->Errors()[4] << " nm" << endl;
+    cout << "Mylar Thickness [THIN]: " << par[5] << " +/- " << minimizer->Errors()[5] << " nm" << endl;
+    cout << "Al1 Thickness [THICK]: " << par[7] << " +/- " << minimizer->Errors()[7] << " nm" << endl;
+    cout << "Mylar Thickness [THICK]: " << par[8] << " +/- " << minimizer->Errors()[8] << " nm" << endl;
+    
 
     flag_saving = true;
     FunctionToMinimize(par);
@@ -637,17 +777,17 @@ void RBS_All()
                 dir_Write->cd();
                 Exp_Hist_MAP[type][energy][face]->SetTitle((type + " " + oss.str() + " MeV " + face).c_str());
                 Exp_Hist_MAP[type][energy][face]->Write();
-                Exp_Hist_calib_MAP[type][energy][face]->SetTitle((type + " " + oss.str() + " MeV " + face).c_str());
-                Exp_Hist_calib_MAP[type][energy][face]->Write();
-                Al1_MAP[type][energy][face]->SetTitle((type + " " + oss.str() + " MeV " + face).c_str());
-                Al1_MAP[type][energy][face]->Write();
-                Oxygen_MAP[type][energy][face]->SetTitle((type + " " + oss.str() + " MeV " + face).c_str());
-                Oxygen_MAP[type][energy][face]->Write();
-                Carbon_MAP[type][energy][face]->SetTitle((type + " " + oss.str() + " MeV " + face).c_str());
-                Carbon_MAP[type][energy][face]->Write();
-                Al2_MAP[type][energy][face]->SetTitle((type + " " + oss.str() + " MeV " + face).c_str());
-                Al2_MAP[type][energy][face]->Write();
-                // Sim_Hist_MAP[type][energy][face]->SetTitle((type + " " + oss.str() + " MeV " + face).c_str());
+                // Exp_Hist_calib_MAP[type][energy][face]->SetTitle((type + " " + oss.str() + " MeV " + face).c_str());
+                // Exp_Hist_calib_MAP[type][energy][face]->Write();
+                // Al1_MAP[type][energy][face]->SetTitle((type + " " + oss.str() + " MeV " + face).c_str());
+                // Al1_MAP[type][energy][face]->Write();
+                // Oxygen_MAP[type][energy][face]->SetTitle((type + " " + oss.str() + " MeV " + face).c_str());
+                // Oxygen_MAP[type][energy][face]->Write();
+                // Carbon_MAP[type][energy][face]->SetTitle((type + " " + oss.str() + " MeV " + face).c_str());
+                // Carbon_MAP[type][energy][face]->Write();
+                // Al2_MAP[type][energy][face]->SetTitle((type + " " + oss.str() + " MeV " + face).c_str());
+                // Al2_MAP[type][energy][face]->Write();
+                // // Sim_Hist_MAP[type][energy][face]->SetTitle((type + " " + oss.str() + " MeV " + face).c_str());
                 // Sim_Hist_MAP[type][energy][face]->Write();
                 Sim_Hist_conv_MAP[type][energy][face]->SetTitle((type + " " + oss.str() + " MeV " + face).c_str());
                 Sim_Hist_conv_MAP[type][energy][face]->Write();
