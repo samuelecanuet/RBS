@@ -258,8 +258,8 @@ double FunctionToMinimize(const double *par)
 
     for (const auto& type : Type)
     {
-        double TH_coef_Al = 1;//Thickness_Al1_MAP[type]/Optimum_Al[type];
-        double TH_coef_Mylar = 1;//Thickness_Mylar_MAP[type]/Optimum_Mylar[type];
+        double TH_coef_Al = (int)Thickness_Al1_MAP[type]/Optimum_Al[type];
+        double TH_coef_Mylar = (int)Thickness_Mylar_MAP[type]/Optimum_Mylar[type];
         for (const auto& energy : Energy)
         {
             for (const auto& face : Face)
@@ -352,11 +352,11 @@ double FunctionToMinimize(const double *par)
                     // Sim_Hist_MAP[type][energy][face] = (TH1D *)Sim_Hist->Clone(("Sim_Hist_" + face).c_str());
                     Sim_Hist_conv_MAP[type][energy][face] = (TH1D *)Sim_Hist_conv->Clone(("Sim_Hist_conv_" + type + "_" + oss.str() + "_" + face + "_4keV").c_str());
 
-                    // fSave->cd();
+                    fSave->cd();
                     // Sim_Hist_MAP[type][energy][face]->SetName(("Sim_Hist_" + osss.str() + "_" + os_al1.str() + "_" + os_mylar.str() + "_" + face + "_" + FaceOffSet[face]).c_str());
                     // Sim_Hist_MAP[type][energy][face]->Write();
-                    // Sim_Hist_conv_MAP[type][energy][face]->SetName(("Sim_Hist_conv_" + osss.str() + "_" + os_al1.str() + "_" + os_mylar.str() + "_" + face + "_" + FaceOffSet[face] + "_4keV").c_str());
-                    // Sim_Hist_conv_MAP[type][energy][face]->Write();
+                    Sim_Hist_conv_MAP[type][energy][face]->SetName(("Sim_Hist_conv_" + osss.str() + "_" + os_al1.str() + "_" + os_mylar.str() + "_" + face + "_" + FaceOffSet[face] + "_4keV").c_str());
+                    Sim_Hist_conv_MAP[type][energy][face]->Write();
                     // Al1_MAP[type][energy][face]->SetName(("Al1_" + osss.str() + "_" + os_al1.str() + "_" + os_mylar.str() + "_" + face + "_" + FaceOffSet[face]).c_str());
                     // Al1_MAP[type][energy][face]->Write();
                     // Oxygen_MAP[type][energy][face]->SetName(("Oxygen_" + osss.str() + "_" + os_al1.str() + "_" + os_mylar.str() + "_" + face + "_" + FaceOffSet[face]).c_str());
@@ -393,10 +393,11 @@ double FunctionToMinimize(const double *par)
                 Exp_Hist_calib_MAP[type][energy][face]->GetXaxis()->SetRangeUser(fMIN_MAP[type][energy], fMAX_MAP[type][energy]);
                 Sim_Hist_conv_MAP[type][energy][face]->GetXaxis()->SetRangeUser(fMIN_MAP[type][energy], fMAX_MAP[type][energy]);
 
-                CHI2_MAP[type][energy][face] = Exp_Hist_calib_MAP[type][energy][face]->Chi2Test(Sim_Hist_conv_MAP[type][energy][face], " UU CHI2/NDF");
-                // CHI2_MAP[type][energy][face] = Chi2Test(Exp_Hist_calib_MAP[type][energy][face], Sim_Hist_conv_MAP[type][energy][face], fMIN_MAP[type][energy], fMAX_MAP[type][energy]) / (fMAX_MAP[type][energy] - fMIN_MAP[type][energy]);
+                // CHI2_MAP[type][energy][face] = Exp_Hist_calib_MAP[type][energy][face]->Chi2Test(Sim_Hist_conv_MAP[type][energy][face], " UU CHI2/NDF");
+                CHI2_MAP[type][energy][face] = Chi2Test(Exp_Hist_calib_MAP[type][energy][face], Sim_Hist_conv_MAP[type][energy][face], fMIN_MAP[type][energy], fMAX_MAP[type][energy]) / (fMAX_MAP[type][energy] - fMIN_MAP[type][energy]);
 
                 CHI2_SUM += CHI2_MAP[type][energy][face];
+                
             }
         }
     }
@@ -454,7 +455,7 @@ int main(int argc, char* argv[])
     Optimum_Mylar["THICK"] = 6100;
 
     Optimum_Al["THIN"] = 85;
-    Optimum_Mylar["THIN"] = 525;   
+    Optimum_Mylar["THIN"] = 500;   
     //////////////////
 
 

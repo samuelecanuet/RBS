@@ -55,3 +55,11 @@ def find_delta(sigma=1, nu=1, tol=1e-10, max_iter=1e8):
     
     raise RuntimeError("Bisection method did not converge")
 
+if __name__ == "__main__":
+    # Define the desired sigma level and degrees of freedom
+    sigma = 1
+    nu = 4
+
+    # Find the corresponding ∆χ² value
+    delta = find_delta(sigma, nu)
+    print(f"∆χ² for {sigma}σ and {nu} degrees of freedom: {delta}")

@@ -123,7 +123,7 @@ string MacroModifier(string filename, string type, double energy, string face)
         }
         if (line.find("%2") != string::npos)
         {
-            line.replace(line.find("%2"), 2, to_string((int)T2) + " nm");
+            line.replace(line.find("%2"), 2, to_string((int)T2+1) + " nm");
         }
         if (line.find("%3") != string::npos)
         {
@@ -279,16 +279,15 @@ double FunctionToMinimize(const double *par)
                 ostringstream os_mylar;
                 os_mylar << fixed << setprecision(1) << Thickness_Mylar_MAP[type];
 
-                Al1_MAP[type][energy][face] = (TH1D *)fSave->Get(("Al1_" + osss.str() + "_" + os_al1.str() + "_" + os_mylar.str() + "_" + face + "_" + FaceOffSet[face]).c_str());
-                Oxygen_MAP[type][energy][face] = (TH1D *)fSave->Get(("Oxygen_" + osss.str() + "_" + os_al1.str() + "_" + os_mylar.str() + "_" + face + "_" + FaceOffSet[face]).c_str());
-                Carbon_MAP[type][energy][face] = (TH1D *)fSave->Get(("Carbon_" + osss.str() + "_" + os_al1.str() + "_" + os_mylar.str() + "_" + face + "_" + FaceOffSet[face]).c_str());
-                Al2_MAP[type][energy][face] = (TH1D *)fSave->Get(("Al2_" + osss.str() + "_" + os_al1.str() + "_" + os_mylar.str() + "_" + face + "_" + FaceOffSet[face]).c_str());
-                Sim_Hist_MAP[type][energy][face] = (TH1D *)fSave->Get(("Sim_Hist_" + osss.str() + "_" + os_al1.str() + "_" + os_mylar.str() + "_" + face + "_" + FaceOffSet[face]).c_str());
+                // Al1_MAP[type][energy][face] = (TH1D *)fSave->Get(("Al1_" + osss.str() + "_" + os_al1.str() + "_" + os_mylar.str() + "_" + face + "_" + FaceOffSet[face]).c_str());
+                // Oxygen_MAP[type][energy][face] = (TH1D *)fSave->Get(("Oxygen_" + osss.str() + "_" + os_al1.str() + "_" + os_mylar.str() + "_" + face + "_" + FaceOffSet[face]).c_str());
+                // Carbon_MAP[type][energy][face] = (TH1D *)fSave->Get(("Carbon_" + osss.str() + "_" + os_al1.str() + "_" + os_mylar.str() + "_" + face + "_" + FaceOffSet[face]).c_str());
+                // Al2_MAP[type][energy][face] = (TH1D *)fSave->Get(("Al2_" + osss.str() + "_" + os_al1.str() + "_" + os_mylar.str() + "_" + face + "_" + FaceOffSet[face]).c_str());
+                // Sim_Hist_MAP[type][energy][face] = (TH1D *)fSave->Get(("Sim_Hist_" + osss.str() + "_" + os_al1.str() + "_" + os_mylar.str() + "_" + face + "_" + FaceOffSet[face]).c_str());
                 Sim_Hist_conv_MAP[type][energy][face] = (TH1D *)fSave->Get(("Sim_Hist_conv_" + osss.str() + "_" + os_al1.str() + "_" + os_mylar.str() + "_" + face + "_" + FaceOffSet[face] + "_4keV").c_str());
 
                 if (!Sim_Hist_conv_MAP[type][energy][face])
                 {
-
                     coef = 1;
                     if (face == "B") // coef from experimental normalization
                     {
@@ -303,10 +302,10 @@ double FunctionToMinimize(const double *par)
                     if (Sim_File->IsZombie())
                     {
 
-                        return 1000;
-                        // string new_macro_filename = MacroModifier(Macro_File, type, energy, face);
-                        // LaunchG4(new_macro_filename);
-                        // Sim_File = new TFile(filename.c_str(), "READ");
+                        // return 1000;
+                        string new_macro_filename = MacroModifier(Macro_File, type, energy, face);
+                        LaunchG4(new_macro_filename);
+                        Sim_File = new TFile(filename.c_str(), "READ");
                     }
 
                     Al1 = (TH1D *)Sim_File->Get("RBS_0_13");
@@ -316,8 +315,10 @@ double FunctionToMinimize(const double *par)
 
                     int integral = Exp_Hist_MAP[type][energy][face]->Integral();
 
-                    double TH_coef_Al = Thickness_Al1_MAP[type]/Optimum_Al[type];
-                    double TH_coef_Mylar = Thickness_Mylar_MAP[type]/Optimum_Mylar[type];
+                    double TH_coef_Al = (int)Thickness_Al1_MAP[type]/Optimum_Al[type];
+                    double TH_coef_Mylar = (int)Thickness_Mylar_MAP[type]/Optimum_Mylar[type];
+
+                    // cout << TH_coef_Al << " " << TH_coef_Mylar << endl;
 
                     Al1->Scale(ScaleAl1_MAP[type][energy][face] / Al1->Integral() * coef * TH_coef_Al);
                     Oxygen->Scale(ScaleOxygen_MAP[type][energy][face] / Oxygen->Integral() * coef * TH_coef_Mylar);
@@ -357,11 +358,11 @@ double FunctionToMinimize(const double *par)
                     Sim_Hist_MAP[type][energy][face] = (TH1D *)Sim_Hist->Clone(("Sim_Hist_" + face).c_str());
                     Sim_Hist_conv_MAP[type][energy][face] = (TH1D *)Sim_Hist_conv->Clone(("Sim_Hist_conv_" + face).c_str());
 
-                    // fSave->cd();
+                    fSave->cd();
                     // Sim_Hist_MAP[type][energy][face]->SetName(("Sim_Hist_" + osss.str() + "_" + os_al1.str() + "_" + os_mylar.str() + "_" + face + "_" + FaceOffSet[face]).c_str());
                     // Sim_Hist_MAP[type][energy][face]->Write();
-                    // Sim_Hist_conv_MAP[type][energy][face]->SetName(("Sim_Hist_conv_" + osss.str() + "_" + os_al1.str() + "_" + os_mylar.str() + "_" + face + "_" + FaceOffSet[face] + "_4keV").c_str());
-                    // Sim_Hist_conv_MAP[type][energy][face]->Write();
+                    Sim_Hist_conv_MAP[type][energy][face]->SetName(("Sim_Hist_conv_" + osss.str() + "_" + os_al1.str() + "_" + os_mylar.str() + "_" + face + "_" + FaceOffSet[face] + "_4keV").c_str());
+                    Sim_Hist_conv_MAP[type][energy][face]->Write();
                     // Al1_MAP[type][energy][face]->SetName(("Al1_" + osss.str() + "_" + os_al1.str() + "_" + os_mylar.str() + "_" + face + "_" + FaceOffSet[face]).c_str());
                     // Al1_MAP[type][energy][face]->Write();
                     // Oxygen_MAP[type][energy][face]->SetName(("Oxygen_" + osss.str() + "_" + os_al1.str() + "_" + os_mylar.str() + "_" + face + "_" + FaceOffSet[face]).c_str());
@@ -374,6 +375,7 @@ double FunctionToMinimize(const double *par)
 
                     // if (!flag_saving)
                     //     Sim_File->Close();
+                
                 }
 
                 //////////////////// ############### EXPERIMENTAL ############### ////////////////////
@@ -395,7 +397,7 @@ double FunctionToMinimize(const double *par)
 
                 // CHI2_MAP[type][energy][face] = Exp_Hist_calib_MAP[type][energy][face]->Chi2Test(Sim_Hist_conv_MAP[type][energy][face], "UU CHI2/NDF");
                 CHI2_MAP[type][energy][face] = Chi2Test(Exp_Hist_calib_MAP[type][energy][face], Sim_Hist_conv_MAP[type][energy][face], fMIN_MAP[type][energy], fMAX_MAP[type][energy]) / (fMAX_MAP[type][energy] - fMIN_MAP[type][energy]);
-                CHI2_SUM += CHI2_MAP[type][energy][face];
+                CHI2_SUM += CHI2_MAP[type][energy][face];                
             }
         }
     }
@@ -546,7 +548,7 @@ void RBS_All()
     Optimum_Mylar["THICK"] = 6100;
 
     Optimum_Al["THIN"] = 85;
-    Optimum_Mylar["THIN"] = 525;   
+    Optimum_Mylar["THIN"] = 500;   
     //////////////////
 
 
@@ -556,7 +558,7 @@ void RBS_All()
 
     // THICKNESS
     Thickness_Al1_MAP["THIN"] =  85;
-    Thickness_Mylar_MAP["THIN"] = 525;
+    Thickness_Mylar_MAP["THIN"] = 500;
     Thickness_Al2_MAP["THIN"] = 85;
 
     Thickness_Al1_MAP["THICK"] = 110;
@@ -564,7 +566,7 @@ void RBS_All()
     Thickness_Al2_MAP["THICK"] = 110;
 
     //moi
-    Calibration_Offset_MAP[1.2] = 22.0887;  //4.19 3.19 1.25 1.15 3.48 4.25
+    Calibration_Offset_MAP[1.2] = 22.0887;
     Calibration_Coefficient_MAP[1.2] = 1.9681;
 
     Calibration_Offset_MAP[3.0] = 288.154/4;
@@ -637,7 +639,7 @@ void RBS_All()
     
 
 
-    Minimizer *minimizer = Factory::CreateMinimizer("Minuit2", "Migrad");
+    Minimizer *minimizer = Factory::CreateMinimizer("Minuit2", "Minuit");
     ROOT::Math::Functor functor(&FunctionToMinimize, 10);
     minimizer->SetFunction(functor);
     // CALIBRATION PARAMETERS
@@ -656,15 +658,15 @@ void RBS_All()
 
     // THICKNESS PARAMETERS
     // minimizer->SetFixedVariable(4, "Al1 Thickness [THIN]", Thickness_Al1_MAP["THIN"]);
-    minimizer->SetLimitedVariable(4, "Al1 Thickness [THIN]", Thickness_Al1_MAP["THIN"], 20, 50, 150);
+    minimizer->SetLimitedVariable(4, "Al1 Thickness [THIN]", Thickness_Al1_MAP["THIN"], 50, 50, 150);
     // minimizer->SetFixedVariable(5, "Mylar Thickness [THIN]", Thickness_Mylar_MAP["THIN"]);
-    minimizer->SetLimitedVariable(5, "Mylar Thickness [THIN]", Thickness_Mylar_MAP["THIN"], 10, 400, 600);
+    minimizer->SetLimitedVariable(5, "Mylar Thickness [THIN]", Thickness_Mylar_MAP["THIN"], 50, 400, 600);
     minimizer->SetFixedVariable(6, "Al2 Thickness [THIN]", Thickness_Al2_MAP["THIN"]);
     // minimizer->SetLimitedVariable(6, "Al2 Thickness [THIN]", Thickness_Al2_MAP["THIN"], 20, 50, 200);
     // minimizer->SetFixedVariable(7, "Al1 Thickness [THICK]", Thickness_Al1_MAP["THICK"]);
-    minimizer->SetLimitedVariable(7, "Al1 Thickness [THICK]", Thickness_Al1_MAP["THICK"], 20, 50, 150);
+    minimizer->SetLimitedVariable(7, "Al1 Thickness [THICK]", Thickness_Al1_MAP["THICK"], 50, 50, 150);
     // minimizer->SetFixedVariable(8, "Mylar Thickness [THICK]", Thickness_Mylar_MAP["THICK"]);
-    minimizer->SetLimitedVariable(8, "Mylar Thickness [THICK]", Thickness_Mylar_MAP["THICK"], 10, 5800, 6300);
+    minimizer->SetLimitedVariable(8, "Mylar Thickness [THICK]", Thickness_Mylar_MAP["THICK"], 50, 5800, 6300);
     minimizer->SetFixedVariable(9, "Al2 Thickness [THICK]", Thickness_Al2_MAP["THICK"]);
     // minimizer->SetLimitedVariable(9, "Al2 Thickness [THICK]", Thickness_Al2_MAP["THICK"], 20, 50, 200);
 
@@ -682,14 +684,30 @@ void RBS_All()
     //     }
     // }
     
-    minimizer->SetPrecision(0.01);
-    minimizer->SetTolerance(100);
+    minimizer->SetPrecision(0.0001);
+    // minimizer->SetTolerance(100);
     minimizer->SetMaxFunctionCalls(1000000);
     minimizer->SetMaxIterations(1000000);
     minimizer->SetPrintLevel(0);
 
-    // minimizer->Minimize();
-    // const double *par = minimizer->X();
+    minimizer->Hesse ();
+
+    minimizer->Minimize();
+    const double *par = minimizer->X();
+
+    double* m;
+    cout << minimizer->GetCovMatrix(m) << endl;
+
+    // cout cov matrix
+    std::cout << "Covariance Matrix:" << std::endl;
+    for (int i = 0; i < 10; i++)
+    {
+        for (int j = 0; j < 10; j++)
+        {
+            cout << m[i*10+j] << " ";
+        }
+        cout << endl;
+    }
 
 
     // int nParams = minimizer->NDim();
@@ -729,14 +747,26 @@ void RBS_All()
     //     std::cout << "delta_a[" << i << "] = " << delta_a[i] << std::endl;
     // }
 
-    const double par[10] = {
-        Calibration_Offset_MAP[1.2], Calibration_Coefficient_MAP[1.2],
-        Calibration_Offset_MAP[3.0], Calibration_Coefficient_MAP[3.0],
-        Thickness_Al1_MAP["THIN"], Thickness_Mylar_MAP["THIN"], Thickness_Al2_MAP["THIN"],
-        Thickness_Al1_MAP["THICK"], Thickness_Mylar_MAP["THICK"], Thickness_Al2_MAP["THICK"]
-    };
+    // const double par[10] = {
+    //     Calibration_Offset_MAP[1.2], Calibration_Coefficient_MAP[1.2],
+    //     Calibration_Offset_MAP[3.0], Calibration_Coefficient_MAP[3.0],
+    //     Thickness_Al1_MAP["THIN"], Thickness_Mylar_MAP["THIN"], Thickness_Al2_MAP["THIN"],
+    //     Thickness_Al1_MAP["THICK"], Thickness_Mylar_MAP["THICK"], Thickness_Al2_MAP["THICK"]
+    // };
 
-    // print errors
+    // // print errors
+
+    // check if the minimization is successful
+    if (minimizer->Status() != 0)
+    {
+        cout << "Minimization failed" << endl;
+    }
+    if (!minimizer->ProvidesError ())
+    {
+        cout << "Cannot compute errors" << endl;
+    }
+
+
     cout << "Calibration Offset [1.2]: " << par[0] << " +/- " << minimizer->Errors()[0] << " keV" << endl;
     cout << "Calibration Coefficient [1.2]: " << par[1] << " +/- " << minimizer->Errors()[1] << " keV/CH" << endl;
     cout << "Calibration Offset [3.0]: " << par[2] << " +/- " << minimizer->Errors()[2] << " keV" << endl;
@@ -810,6 +840,7 @@ void RBS_All()
                 Sim_Hist_conv_MAP[type][energy][face]->SetLineColor(kRed);
                 Sim_Hist_conv_MAP[type][energy][face]->Draw("HIST SAME");
 
+
                 t->Draw("SAME");
 
                 if (counter == 1)
@@ -832,22 +863,22 @@ void RBS_All()
                 c2->cd(face_counter);
                 Exp_Hist_calib_MAP[type][energy][face]->Draw("HIST");
                 legend_2->AddEntry(Exp_Hist_calib_MAP[type][energy][face], "Experimental", "l");
-                Al1_MAP[type][energy][face]->SetLineColor(kCyan);
-                Al1_MAP[type][energy][face]->SetTitle("Al (front)");
-                Al1_MAP[type][energy][face]->Draw("HIST SAME");
-                legend_2->AddEntry(Al1_MAP[type][energy][face], "Al (front)", "l");
-                Al2_MAP[type][energy][face]->SetLineColor(kGreen);
-                Al2_MAP[type][energy][face]->SetTitle("Al (back)");
-                Al2_MAP[type][energy][face]->Draw("HIST SAME");
-                legend_2->AddEntry(Al2_MAP[type][energy][face], "Al (back)", "l");
-                Oxygen_MAP[type][energy][face]->SetLineColor(kBlue);
-                Oxygen_MAP[type][energy][face]->SetTitle("Oxygen");
-                Oxygen_MAP[type][energy][face]->Draw("HIST SAME");
-                legend_2->AddEntry(Oxygen_MAP[type][energy][face], "Oxygen", "l");
-                Carbon_MAP[type][energy][face]->SetLineColor(kMagenta);
-                Carbon_MAP[type][energy][face]->SetTitle("Carbon");
-                Carbon_MAP[type][energy][face]->Draw("HIST SAME");
-                legend_2->AddEntry(Carbon_MAP[type][energy][face], "Carbon", "l");
+                // Al1_MAP[type][energy][face]->SetLineColor(kCyan);
+                // Al1_MAP[type][energy][face]->SetTitle("Al (front)");
+                // Al1_MAP[type][energy][face]->Draw("HIST SAME");
+                // legend_2->AddEntry(Al1_MAP[type][energy][face], "Al (front)", "l");
+                // Al2_MAP[type][energy][face]->SetLineColor(kGreen);
+                // Al2_MAP[type][energy][face]->SetTitle("Al (back)");
+                // Al2_MAP[type][energy][face]->Draw("HIST SAME");
+                // legend_2->AddEntry(Al2_MAP[type][energy][face], "Al (back)", "l");
+                // Oxygen_MAP[type][energy][face]->SetLineColor(kBlue);
+                // Oxygen_MAP[type][energy][face]->SetTitle("Oxygen");
+                // Oxygen_MAP[type][energy][face]->Draw("HIST SAME");
+                // legend_2->AddEntry(Oxygen_MAP[type][energy][face], "Oxygen", "l");
+                // Carbon_MAP[type][energy][face]->SetLineColor(kMagenta);
+                // Carbon_MAP[type][energy][face]->SetTitle("Carbon");
+                // Carbon_MAP[type][energy][face]->Draw("HIST SAME");
+                // legend_2->AddEntry(Carbon_MAP[type][energy][face], "Carbon", "l");
                 face_counter++;
             }
             c1->cd();

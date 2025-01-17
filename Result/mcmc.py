@@ -65,8 +65,8 @@ def save_progress(sampler, step, save_interval=100):
             os.remove(f"log_prob_step{step-save_interval}.npy")
 
 ########################## PARAMETERS ##########################
-type = ["THIN"]
-energy = [1.2]
+type = ["THIN", "THICK"]
+energy = [1.2, 3.0]
 
 nsteps = 100
 burnin = 100
@@ -208,11 +208,11 @@ if (len(sys.argv) > 1):
         np.save("log_prob.npy", sampler.get_log_prob())
 
 try:
-    chain = np.load("chain_thin_1p2_4par_40w_binned_wxs.npy")
-    # chain = np.load("chain_all_8par_80w.npy")
-    # chain = chain.reshape(-1, nwalkers, ndim)
-    lnprob = np.load("log_prob_thin_1p2_4par_40w_binned_wxs.npy")
-    # lnprob = np.load("log_prob_all_8par_80w.npy")
+    # chain = np.load("chain_thin_1p2_4par_40w_binned_wxs.npy")
+    chain = np.load("chain_all_8par_80w.npy")
+    chain = chain.reshape(-1, nwalkers, ndim)
+    # lnprob = np.load("log_prob_thin_1p2_4par_40w_binned_wxs.npy")
+    lnprob = np.load("log_prob_all_8par_80w.npy")
 except FileNotFoundError:
     print("Error: chain.npy or lnprob.npy not found. Ensure they are in the current directory.")
     exit(1)
@@ -273,8 +273,8 @@ for i in range(ndim):
 fig.savefig("Corner.png")
 
 
-print("---- BEST parameters: ", np.min(-2*lnprob))
-indices_chi2p1 = -2 * lnprob.flatten() <= np.min(-2 * lnprob) + 1
+print(f"---- BEST parameters - GLOBAL ERROR : CHI2+{(find_delta(sigma=1, nu=ndim)):.4f}: ", np.min(-2*lnprob))
+indices_chi2p1 = -2 * lnprob.flatten() <= np.min(-2 * lnprob) + find_delta(sigma=1, nu=ndim)
 params_chi2p1 = flat_chain[indices_chi2p1]
 
 params_error = [
@@ -357,7 +357,7 @@ for i in range(ndim):
 
 fig1.savefig("Corner_restricted.png")
 
-print("---- BEST RESTRICTED parameters: ", np.min(-2*filtered_ln_prob_wonan))
+print("---- BEST parameters - LOCAL ERROR ( CHI2 + 4.30 for each histograms ): ", np.min(-2*filtered_ln_prob_wonan))
 ### Chi² + 1
 ntype = len(integer_params)/2
 nenergy = ( len(parameters) - len(integer_params) ) /2
@@ -538,7 +538,7 @@ for n, error in tqdm(enumerate(credible_region), desc="Loading"):
         raise RuntimeError(f"Failed to parse chi2 from ROOT output: {result.stdout}")
     
     # selection chi2+1 per histogram
-    if (chi2_mins + 1 < chi2 ).any():
+    if (chi2_mins + find_delta(1, 4) < chi2 ).any():
         continue
 
     ## saving error bar 

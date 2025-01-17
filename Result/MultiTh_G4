@@ -41,8 +41,8 @@ i=0
 
 # Define the arrays
 
-al_thickness=("5" "205")
-mylar_thickness_thick=("5900" "6100")
+al_thickness=("50" "150")
+mylar_thickness_thick=("5920" "6200")
 mylar_thickness_thin=("400" "600")
 thickness_step=5
 

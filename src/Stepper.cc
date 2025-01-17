@@ -45,7 +45,7 @@ G4VParticleChange *Stepper::PostStepDoIt(const G4Track &aTrack, const G4Step &aS
     if (!Flag)
     {
         // cout << (int)LastHit << "   " << (int)(aStep.GetPostStepPoint()->GetPosition().z() / nm) << endl;
-        if (aStep.GetPostStepPoint()->GetProcessDefinedStep()->GetProcessName() == "CREATOR_PROCESS" )//&& (int)LastHit != (int)(aStep.GetPostStepPoint()->GetPosition().z()*nm))
+        if (aStep.GetPostStepPoint()->GetProcessDefinedStep()->GetProcessName() == "CREATOR_PROCESS" && aTrack.GetCurrentStepNumber() < 1e5)
         {
             // LastHit = aStep.GetPostStepPoint()->GetPosition().z()/nm;
             Flag = false;
