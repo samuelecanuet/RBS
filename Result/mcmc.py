@@ -273,8 +273,8 @@ for i in range(ndim):
 fig.savefig("Corner.png")
 
 
-print(f"---- BEST parameters - GLOBAL ERROR : CHI2+{(find_delta(sigma=1, nu=ndim)):.4f}: ", np.min(-2*lnprob))
-indices_chi2p1 = -2 * lnprob.flatten() <= np.min(-2 * lnprob) + find_delta(sigma=1, nu=ndim)
+print("---- BEST parameters: ", np.min(-2*lnprob))
+indices_chi2p1 = -2 * lnprob.flatten() <= np.min(-2 * lnprob) + 1
 params_chi2p1 = flat_chain[indices_chi2p1]
 
 params_error = [

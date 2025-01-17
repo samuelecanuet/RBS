@@ -26,7 +26,7 @@ for al in range(Al[0], Al[1], 5):
         Problem = False
         al_data.append(al)
         mylar_data.append(mylar)
-        filename = f"../../../../../../mnt/hgfs/shared-2/ROOT_files/3.0_{al}_{mylar}_{al}_A_-2.root"
+        filename = f"../../../../../../mnt/hgfs/shared-2/ROOT_files/1.2_{al}_{mylar}_{al}_A_-2.root"
         try:
             file = TFile(filename, "READ")
         except:
@@ -45,11 +45,11 @@ for al in range(Al[0], Al[1], 5):
             weight_data.append(0)
             continue
 
-        if hist.GetMaximum() / hist.Integral() > 0.007:
-            # os.remove(filename)
-            weight_data.append(2)
-        else:
-            weight_data.append(1)
+        # if hist.GetMaximum() / hist.Integral() > 0.0036:
+        #     # os.remove(filename)
+        #     weight_data.append(2)
+        # else:
+        weight_data.append(1)
 
 
 plt.show()

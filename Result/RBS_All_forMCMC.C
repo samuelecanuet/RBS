@@ -397,7 +397,6 @@ double FunctionToMinimize(const double *par)
                 CHI2_MAP[type][energy][face] = Chi2Test(Exp_Hist_calib_MAP[type][energy][face], Sim_Hist_conv_MAP[type][energy][face], fMIN_MAP[type][energy], fMAX_MAP[type][energy]) / (fMAX_MAP[type][energy] - fMIN_MAP[type][energy]);
 
                 CHI2_SUM += CHI2_MAP[type][energy][face];
-                
             }
         }
     }

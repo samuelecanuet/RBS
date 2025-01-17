@@ -690,10 +690,8 @@ void RBS_All()
     minimizer->SetMaxIterations(1000000);
     minimizer->SetPrintLevel(0);
 
-    minimizer->Hesse ();
-
-    minimizer->Minimize();
-    const double *par = minimizer->X();
+    // minimizer->Minimize();
+    // const double *par = minimizer->X();
 
     double* m;
     cout << minimizer->GetCovMatrix(m) << endl;
@@ -710,42 +708,42 @@ void RBS_All()
     }
 
 
-    // int nParams = minimizer->NDim();
+    int nParams = minimizer->NDim();
 
-    // // Retrieve the covariance matrix
-    // TMatrixD covarianceMatrix = GetCovarianceMatrix(minimizer, nParams);
+    // Retrieve the covariance matrix
+    TMatrixD covarianceMatrix = GetCovarianceMatrix(minimizer, nParams);
 
-    // // Print the covariance matrix
-    // std::cout << "Covariance Matrix:" << std::endl;
-    // covarianceMatrix.Print();
+    // Print the covariance matrix
+    std::cout << "Covariance Matrix:" << std::endl;
+    covarianceMatrix.Print();
 
-    // // Extract submatrix for parameters of interest
-    // std::vector<int> indicesOfInterest = {0, 1, 2, 3, 4, 5, 7, 8};
-    // TMatrixD Cproj = ExtractSubmatrix(covarianceMatrix, indicesOfInterest);
+    // Extract submatrix for parameters of interest
+    std::vector<int> indicesOfInterest = {0, 1, 2, 3, 4, 5, 7, 8};
+    TMatrixD Cproj = ExtractSubmatrix(covarianceMatrix, indicesOfInterest);
 
-    // // Print the projected submatrix
-    // std::cout << "Projected Covariance Submatrix:" << std::endl;
-    // Cproj.Print();
+    // Print the projected submatrix
+    std::cout << "Projected Covariance Submatrix:" << std::endl;
+    Cproj.Print();
 
-    // // Invert the submatrix
-    // TDecompLU decompLU(Cproj);
-    // if (!decompLU.Invert(Cproj)) {
-    //     std::cerr << "Error: Failed to invert submatrix." << std::endl;
-    //     return -1;
-    // }
-    // TMatrixD CprojInv = Cproj;
+    // Invert the submatrix
+    TDecompLU decompLU(Cproj);
+    if (!decompLU.Invert(Cproj)) {
+        std::cerr << "Error: Failed to invert submatrix." << std::endl;
+        return -1;
+    }
+    TMatrixD CprojInv = Cproj;
 
-    // // Define known Delta value
-    // double delta = 9.3;  // Example: Known chi-square value
+    // Define known Delta value
+    double delta = 9.3;  // Example: Known chi-square value
 
-    // // Solve for delta_a
-    // std::vector<double> delta_a = SolveDeltaA(CprojInv, delta);
+    // Solve for delta_a
+    std::vector<double> delta_a = SolveDeltaA(CprojInv, delta);
 
-    // // Output the result
-    // std::cout << "The delta_a vector is:" << std::endl;
-    // for (size_t i = 0; i < delta_a.size(); ++i) {
-    //     std::cout << "delta_a[" << i << "] = " << delta_a[i] << std::endl;
-    // }
+    // Output the result
+    std::cout << "The delta_a vector is:" << std::endl;
+    for (size_t i = 0; i < delta_a.size(); ++i) {
+        std::cout << "delta_a[" << i << "] = " << delta_a[i] << std::endl;
+    }
 
     // const double par[10] = {
     //     Calibration_Offset_MAP[1.2], Calibration_Coefficient_MAP[1.2],
